@@ -1,0 +1,9 @@
+select = { "SELECT" ~ columns ~ "FROM" ~ table_name ~ ";" }
+
+columns = { "*" | column_list }
+column_list = { column ~ ("," ~ column)* }
+column = { ASCII_ALPHA+ }
+
+table_name = { ASCII_ALPHA+ }
+
+WHITESPACE = _{ " " | "\t" | "\n" }
