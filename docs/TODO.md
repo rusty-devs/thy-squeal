@@ -1,5 +1,19 @@
 # TODO - Implementation Tasks
 
+## Feature Specifications
+See [docs/features/](./features/) for detailed specifications.
+
+| Feature | File |
+|---------|------|
+| SQL Parser | [features/sql-parser.md](./features/sql-parser.md) |
+| TCP Protocol | [features/tcp-protocol.md](./features/tcp-protocol.md) |
+| HTTP API | [features/http-api.md](./features/http-api.md) |
+| Key-Value Store | [features/key-value-store.md](./features/key-value-store.md) |
+| Full-Text Search | [features/full-text-search.md](./features/full-text-search.md) |
+| JS REPL Client | [features/js-repl-client.md](./features/js-repl-client.md) |
+| Table Caching | [features/table-caching.md](./features/table-caching.md) |
+| Authentication | [features/authentication.md](./features/authentication.md) |
+
 ## Project Setup
 
 - [ ] Set up workspace with Cargo workspace
@@ -9,6 +23,7 @@
 - [ ] Add config loading (YAML)
 
 ## Phase 1: Foundation (v0.1)
+See: [sql-parser.md](./features/sql-parser.md), [tcp-protocol.md](./features/tcp-protocol.md)
 
 ### SQL Parser
 - [ ] Extend Pest grammar for SELECT
@@ -32,6 +47,7 @@
 **Milestone v0.1**: Basic SQL server running, can execute SELECT/INSERT/UPDATE/DELETE
 
 ## Phase 2: HTTP API (v0.2)
+See: [http-api.md](./features/http-api.md)
 
 ### HTTP Server
 - [ ] Set up Axum on port 9200
@@ -50,6 +66,7 @@
 **Milestone v0.2**: HTTP JSON API working alongside TCP SQL
 
 ## Phase 3: Advanced SQL (v0.3)
+See: [sql-parser.md](./features/sql-parser.md)
 
 ### Query Features
 - [ ] Add JOIN support (INNER, LEFT)
@@ -75,6 +92,7 @@
 **Milestone v0.3**: Full SQL query capabilities
 
 ## Phase 4: Search & KV (v0.4)
+See: [key-value-store.md](./features/key-value-store.md), [full-text-search.md](./features/full-text-search.md)
 
 ### Key-Value Store
 - [ ] Implement DashMap-based KV storage
@@ -101,6 +119,7 @@
 **Milestone v0.4**: Redis-like KV and Elasticsearch-like search
 
 ## Phase 5: Client (v0.5)
+See: [js-repl-client.md](./features/js-repl-client.md)
 
 ### CLI
 - [ ] Set up Clap for argument parsing
@@ -127,6 +146,7 @@
 **Milestone v0.5**: Full client with JS REPL
 
 ## Phase 6: Production (v1.0)
+See: [authentication.md](./features/authentication.md), [table-caching.md](./features/table-caching.md)
 
 ### Security
 - [ ] Add authentication (username/password)
