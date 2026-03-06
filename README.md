@@ -16,11 +16,14 @@ A lightweight SQL server with HTTP JSON API and Redis-like key-value storage.
 # Build
 cargo build
 
-# Run server
-cargo run --release
+# Run server (HTTP on port 9200)
+cargo run -p thy-squeal
 
 # Run client
-cargo run --release --package thy-squeal-client
+cargo run -p thy-squeal-client
+
+# Or run in release mode
+cargo run --release -p thy-squeal
 ```
 
 ## Documentation

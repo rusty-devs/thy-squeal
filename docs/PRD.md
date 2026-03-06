@@ -319,58 +319,52 @@ repl:
 ## 7. File Structure
 
 ```
-thy-squeal/
-├── Cargo.toml
-├── thy-squeal.yaml.example
-├── src/
-│   ├── main.rs                 # Server entry
-│   ├── server/
-│   │   ├── mod.rs
-│   │   ├── sql/
-│   │   │   ├── mod.rs
-│   │   │   ├── parser.rs      # Pest grammar + parser
-│   │   │   ├── executor.rs     # Query execution
-│   │   │   └── planner.rs     # Query planning
-│   │   ├── http/
-│   │   │   ├── mod.rs
-│   │   │   └── handlers.rs    # REST endpoints
-│   │   ├── storage/
-│   │   │   ├── mod.rs
-│   │   │   ├── table.rs       # Table management
-│   │   │   ├── cache.rs       # LRU/LFU cache
-│   │   │   └── kv.rs          # Key-value store
-│   │   └── search/
-│   │       ├── mod.rs
-│   │       └── fts.rs         # Full-text search
-│   └── common/
-│       ├── mod.rs
-│       ├── types.rs           # Data types
-│       └── error.rs           # Error types
-├── client/
+thy-squeal/                          # Cargo workspace
+├── Cargo.toml                       # Workspace config
+├── thy-squeal.yaml.example          # Server config template
+├── server/                          # Server crate
 │   ├── Cargo.toml
-│   ├── src/
-│   │   ├── main.rs            # Client entry
-│   │   ├── repl.rs            # JS REPL
-│   │   ├── sql_client.rs      # SQL protocol
-│   │   ├── http_client.rs     # HTTP client
-│   │   └── js_api.rs          # JS bindings
+│   └── src/
+│       ├── main.rs                  # Server entry (Axum HTTP)
+│       ├── config.rs                # YAML config loading
+│       └── sql.pest                 # SQL grammar
+├── client/                          # Client crate
+│   ├── Cargo.toml
+│   └── src/
+│       ├── main.rs                  # Client CLI (Clap)
+│       ├── config.rs                # Client config
+│       ├── http.rs                  # HTTP client
+│       └── repl.rs                  # REPL (rustyline)
 ├── docs/
-│   └── PRD.md
-└── examples/
-    └── *.sql
+│   ├── PRD.md
+│   ├── TODO.md
+│   └── features/
+│       └── *.md
+├── examples/
+│   └── *.sql
+└── LICENSE, README.md
 ```
+
+### Current Status
+- [x] Workspace setup
+- [x] Server binary with Axum HTTP on port 9200
+- [x] Client binary with REPL
+- [x] YAML config loading
 
 ---
 
 ## 8. Phases
 
 ### Phase 1: Foundation (v0.1)
+- [x] Set up workspace with Cargo workspace
+- [x] Server binary with Axum HTTP (port 9200)
+- [x] Client binary with REPL
 - [ ] Basic SQL parser (SELECT, INSERT, UPDATE, DELETE)
 - [ ] In-memory table storage
-- [ ] Basic TCP server
+- [ ] TCP server
 
 ### Phase 2: HTTP API (v0.2)
-- [ ] HTTP JSON API
+- [x] HTTP JSON API (basic Axum server running)
 - [ ] CRUD endpoints for tables
 
 ### Phase 3: Advanced SQL (v0.3)

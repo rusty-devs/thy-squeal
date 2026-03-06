@@ -2,20 +2,29 @@
 
 ## Project Overview
 
-thy-squeal is a SQL parser built with Pest (PEG parser generator). It parses simple SELECT statements using a Pest grammar defined in `src/sql.pest`.
+thy-squeal is a SQL server with HTTP JSON API, built with Rust. It's a Cargo workspace with:
+- `server/` - Server binary with Axum HTTP server
+- `client/` - CLI client with REPL
 
 ## Build, Test, and Development Commands
 
-### Basic Cargo Commands
+### Workspace Commands
 ```bash
-# Build the project
+# Build all binaries
 cargo build
 
-# Run the project
-cargo run
+# Build specific binary
+cargo build -p thy-squeal          # Server
+cargo build -p thy-squeal-client   # Client
+
+# Run server (HTTP on port 9200)
+cargo run -p thy-squeal
+
+# Run client
+cargo run -p thy-squeal-client
 
 # Run in release mode
-cargo run --release
+cargo run --release -p thy-squeal
 
 # Build documentation
 cargo doc
@@ -104,29 +113,15 @@ cargo update
 - Match on `Result` types explicitly rather than using `unwrap()`
 
 ### Pest Grammar (sql.pest)
-- Keep the grammar file in `src/sql.pest`
+- Keep the grammar file in `server/src/sql.pest`
 - Define rules following Pest syntax
 - Use `_` prefix for silent rules (whitespace, etc.)
 - Document complex rules with comments
 
-### Documentation
-- Add docstrings (`///`) to public functions and types
-- Document the purpose of each Pest grammar rule
-- Keep README.md updated with new features
-
-### Project Structure
-```
-src/
-  main.rs       # Entry point and parser usage
-  sql.pest      # Pest grammar definition
-examples/
-  *.sql         # Example SQL files for testing
-```
-
 ### Working with Pest
-1. Modify grammar in `src/sql.pest`
+1. Modify grammar in `server/src/sql.pest`
 2. Run `cargo build` to regenerate the parser
-3. Test parsing with `cargo run`
+3. Test parsing with `cargo run -p thy-squeal`
 4. Use `cargo test` for regression testing
 
 ### Testing Strategy

@@ -16,11 +16,16 @@ See [docs/features/](./features/) for detailed specifications.
 
 ## Project Setup
 
-- [ ] Set up workspace with Cargo workspace
-- [ ] Create server binary (`thy-squeal`)
-- [ ] Create client binary (`thy-squeal-client`)
-- [ ] Set up logging with `tracing`
-- [ ] Add config loading (YAML)
+- [x] Set up workspace with Cargo workspace
+- [x] Create server binary (`thy-squeal`)
+- [x] Create client binary (`thy-squeal-client`)
+- [x] Set up logging with `tracing`
+- [x] Add config loading (YAML)
+
+### Current Status
+- Server runs on HTTP port 9200 (Axum)
+- Client REPL is functional (rustyline)
+- Config loads from `thy-squeal.yaml`
 
 ## Phase 1: Foundation (v0.1)
 See: [sql-parser.md](./features/sql-parser.md), [tcp-protocol.md](./features/tcp-protocol.md)
