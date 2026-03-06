@@ -1,6 +1,9 @@
+mod parser;
+
 use crate::storage::Database;
 use crate::storage::Value;
 use crate::storage::{Column, DataType};
+use parser::{parse_statement_kind, StatementKind};
 
 #[derive(Debug)]
 pub struct QueryResult {
@@ -26,31 +29,17 @@ impl Executor {
 
     pub async fn execute(&self, sql: &str) -> Result<QueryResult, String> {
         let sql = sql.trim();
-        
-        // Simple SQL parsing
-        let sql_upper = sql.to_uppercase();
-        
-        // CREATE TABLE
-        if sql_upper.starts_with("CREATE TABLE") {
-            return self.create_table(sql).await;
+
+        let kind = parse_statement_kind(sql)?;
+
+        match kind {
+            StatementKind::CreateTable => self.create_table(sql).await,
+            StatementKind::DropTable => self.drop_table(sql).await,
+            StatementKind::Select => self.select(sql).await,
+            StatementKind::Insert => self.insert(sql).await,
+            StatementKind::Update => Err("UPDATE is not implemented yet".to_string()),
+            StatementKind::Delete => Err("DELETE is not implemented yet".to_string()),
         }
-        
-        // DROP TABLE
-        if sql_upper.starts_with("DROP TABLE") {
-            return self.drop_table(sql).await;
-        }
-        
-        // SELECT
-        if sql_upper.starts_with("SELECT") {
-            return self.select(sql).await;
-        }
-        
-        // INSERT
-        if sql_upper.starts_with("INSERT") {
-            return self.insert(sql).await;
-        }
-        
-        Err(format!("Unsupported SQL: {}", sql))
     }
 
     async fn create_table(&self, sql: &str) -> Result<QueryResult, String> {
