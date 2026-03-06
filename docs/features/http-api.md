@@ -3,6 +3,17 @@
 ## Overview
 REST API for thy-squeal, Elasticsearch-style endpoints for data access.
 
+## Implementation Status
+
+| Endpoint | Status |
+|----------|--------|
+| GET `/` | ✅ Implemented |
+| GET `/health` | ✅ Implemented |
+| POST `/_query` | ✅ Implemented |
+| GET `/_stats` | ❌ Not implemented |
+| REST CRUD (`/<db>/<table>`, etc.) | ❌ Not implemented |
+| Search, KV | ❌ Not implemented |
+
 ## Server Configuration
 ```yaml
 server:

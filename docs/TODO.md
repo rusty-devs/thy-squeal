@@ -1,5 +1,7 @@
 # TODO - Implementation Tasks
 
+See [MVP-ARCHITECTURE.md](./MVP-ARCHITECTURE.md) for recommended architecture changes to reach MVP.
+
 ## Feature Specifications
 See [docs/features/](./features/) for detailed specifications.
 
@@ -24,54 +26,60 @@ See [docs/features/](./features/) for detailed specifications.
 
 ### Current Status
 - Server runs on HTTP port 9200 (Axum)
-- Client REPL is functional (rustyline)
+- Client REPL exists (rustyline); SQL execution in REPL not wired
 - Config loads from `thy-squeal.yaml`
+- GET /, GET /health, POST /_query, CORS working
 
 ## Phase 1: Foundation (v0.1)
 See: [sql-parser.md](./features/sql-parser.md), [tcp-protocol.md](./features/tcp-protocol.md)
 
 ### SQL Parser
-- [x] Simple SQL parser for SELECT
+- [x] Simple SQL parser for SELECT (hand-rolled string parsing)
 - [x] INSERT support
-- [ ] UPDATE support
-- [ ] DELETE support
+- [x] CREATE TABLE, DROP TABLE
+- [ ] UPDATE support (Table has update; Executor does not parse/dispatch)
+- [ ] DELETE support (Table has delete; Executor does not parse/dispatch)
+- [ ] Wire Pest grammar (sql.pest) into executor
 
 ### Storage
 - [x] In-memory table struct
 - [x] Row storage (Vec)
-- [x] Basic CRUD operations
+- [x] Basic CRUD operations (insert, select, update, delete at Table level)
 - [x] Row ID generation (UUID)
+- [ ] WHERE clause filtering (select_where is TODO stub)
 
 ### HTTP Server
 - [x] Set up Axum on port 9200
 - [x] POST /_query endpoint
-- [ ] Add more REST endpoints
+- [x] GET /, GET /health
+- [ ] Add more REST endpoints (/_stats, CRUD)
 
 ### Current Status
 - Server running on http://localhost:9200
 - SQL execution works via POST /_query
-- CREATE TABLE, INSERT, SELECT supported
+- CREATE TABLE, DROP TABLE, INSERT, SELECT supported (no WHERE/ORDER/LIMIT)
 
-**Milestone v0.1**: Basic SQL server running, can execute SELECT/INSERT/UPDATE/DELETE
+**Milestone v0.1**: Basic SQL server running; SELECT/INSERT/CREATE/DROP work; UPDATE/DELETE/WHERE pending
 
 ## Phase 2: HTTP API (v0.2)
 See: [http-api.md](./features/http-api.md)
 
 ### HTTP Server
-- [ ] Set up Axum on port 9200
-- [ ] Add CORS middleware
-- [ ] Create health endpoint (`/health`)
-- [ ] Add server info endpoint (`/`)
+- [x] Set up Axum on port 9200
+- [x] Add CORS middleware
+- [x] Create health endpoint (`/health`)
+- [x] Add server info endpoint (`/`)
+- [ ] GET `/_stats` - Storage/cache statistics
 
 ### REST Endpoints
-- [ ] POST `/_query` - Execute SQL
+- [x] POST `/_query` - Execute SQL
 - [ ] GET `/<db>/<table>` - List rows
 - [ ] GET `/<db>/<table>/<id>` - Get row
 - [ ] POST `/<db>/<table>` - Insert row
 - [ ] PUT `/<db>/<table>/<id>` - Update row
 - [ ] DELETE `/<db>/<table>/<id>` - Delete row
 
-**Milestone v0.2**: HTTP JSON API working alongside TCP SQL
+**Milestone v0.2**: HTTP JSON API working; CRUD endpoints and /_stats pending
 
 ## Phase 3: Advanced SQL (v0.3)
 See: [sql-parser.md](./features/sql-parser.md)
@@ -130,18 +138,20 @@ See: [key-value-store.md](./features/key-value-store.md), [full-text-search.md](
 See: [js-repl-client.md](./features/js-repl-client.md)
 
 ### CLI
-- [ ] Set up Clap for argument parsing
-- [ ] Add `-e` / `--execute` flag
-- [ ] Add `-h` / `--host` flag
-- [ ] Add `--http` flag for HTTP mode
+- [x] Set up Clap for argument parsing
+- [x] Add `-e` / `--execute` flag
+- [x] Add `-h` / `--host` flag
+- [x] Add `--http` flag for HTTP mode
 - [ ] Add `--export` / `--import`
+- [ ] Wire `Query` subcommand to execute SQL
 
 ### REPL
-- [ ] Integrate rustyline
-- [ ] Add history (arrow keys)
+- [x] Integrate rustyline
+- [x] Add history (arrow keys)
+- [x] Add `.help`, `.quit` / `.exit`
+- [ ] Wire SQL input to HTTP client execution
 - [ ] Add tab completion
 - [ ] Add `.load` command
-- [ ] Add `.help` command
 
 ### JavaScript Runtime
 - [ ] Integrate quickjs-rs

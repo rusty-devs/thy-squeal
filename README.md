@@ -1,14 +1,21 @@
 # thy-squeal
 
-A lightweight SQL server with HTTP JSON API and Redis-like key-value storage.
+A lightweight SQL server with HTTP JSON API, built in Rust.
 
-## Features
+## Current Features
 
-- **SQL Database** - MySQL-compatible SQL dialect with full-text search
-- **HTTP API** - Elasticsearch-style REST endpoints
-- **Key-Value Store** - Redis-compatible in-memory storage
-- **JavaScript REPL** - Interactive client with embedded JS runtime
-- **Dynamic Caching** - Configurable per-table LRU/LFU/FIFO cache
+- **SQL Database** - In-memory relational storage with a SQL subset: CREATE TABLE, DROP TABLE, SELECT, INSERT
+- **HTTP API** - JSON API on port 9200: `GET /`, `GET /health`, `POST /_query` for SQL execution
+- **CLI Client** - `thy-squeal-client` with `--http -e "SQL"` for one-off queries and a text REPL (SQL execution in REPL pending)
+- **Configuration** - YAML config (`thy-squeal.yaml`) for server, storage, security, and logging
+
+## Roadmap (see [PRD](./docs/PRD.md))
+
+- MySQL-compatible SQL dialect (WHERE, JOINs, UPDATE, DELETE, aggregations)
+- TCP SQL protocol
+- Key-value store (Redis-like)
+- Full-text search
+- JavaScript REPL client
 
 ## Quick Start
 
@@ -29,6 +36,7 @@ cargo run --release -p thy-squeal
 ## Documentation
 
 - [PRD](./docs/PRD.md) - Product requirements and architecture
+- [MVP Architecture](./docs/MVP-ARCHITECTURE.md) - Suggested changes for a minimal viable release
 - [TODO](./docs/TODO.md) - Implementation tasks
 - [Features](./docs/features/) - Detailed feature specifications
 
@@ -36,8 +44,8 @@ cargo run --release -p thy-squeal
 
 | Binary | Description |
 |--------|-------------|
-| `thy-squeal` | SQL server (ports 3306 SQL, 9200 HTTP) |
-| `thy-squeal-client` | CLI client with JavaScript REPL |
+| `thy-squeal` | SQL server (HTTP on port 9200; TCP SQL port 3306 planned) |
+| `thy-squeal-client` | CLI client with REPL (`--http` mode for server connection) |
 
 ## License
 

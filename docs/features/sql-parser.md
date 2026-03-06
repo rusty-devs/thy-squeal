@@ -3,6 +3,12 @@
 ## Overview
 Pest-based SQL parser for thy-squeal, supporting a MySQL-compatible dialect.
 
+## Implementation Status
+
+- **Grammar** (`server/src/sql.pest`): ✅ Defined (SELECT, INSERT, UPDATE, DELETE, CREATE TABLE, DROP TABLE, WHERE, ORDER BY, LIMIT, expressions, etc.)
+- **Executor**: Uses **hand-rolled string parsing**, not Pest. Supported: CREATE TABLE, DROP TABLE, SELECT (no WHERE/ORDER/LIMIT), INSERT. UPDATE, DELETE, and WHERE are not wired at executor level.
+- **Next step**: Implement Pest-based parser module, produce AST, and wire executor to use AST instead of string matching.
+
 ## Supported SQL Statements
 
 ### Data Query Language (DQL)

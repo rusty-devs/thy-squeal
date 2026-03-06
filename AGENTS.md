@@ -3,8 +3,12 @@
 ## Project Overview
 
 thy-squeal is a SQL server with HTTP JSON API, built with Rust. It's a Cargo workspace with:
-- `server/` - Server binary with Axum HTTP server
-- `client/` - CLI client with REPL
+- `server/` - Server binary with Axum HTTP server; in-memory storage; SQL execution (hand-rolled parsing)
+- `client/` - CLI client with REPL; `--http -e "SQL"` for one-off queries
+
+### Current Implementation Notes
+- **SQL parsing**: A Pest grammar exists in `server/src/sql.pest`, but the executor in `sql/mod.rs` uses hand-rolled string parsing. CREATE TABLE, DROP TABLE, SELECT, INSERT are implemented; UPDATE, DELETE, WHERE, ORDER BY, LIMIT are not.
+- **Storage**: `server/src/storage/mod.rs` — `Database`, `Table`, `Row`, `Value`, `DataType`. `Table` has `update`/`delete`/`select_where` but `select_where` is a stub (returns all rows).
 
 ## Build, Test, and Development Commands
 
@@ -119,9 +123,11 @@ cargo update
 - Document complex rules with comments
 
 ### Working with Pest
-1. Modify grammar in `server/src/sql.pest`
-2. Run `cargo build` to regenerate the parser
-3. Test parsing with `cargo run -p thy-squeal`
+- Grammar file: `server/src/sql.pest` (SELECT, INSERT, UPDATE, DELETE, CREATE TABLE, DROP TABLE, WHERE, ORDER BY, LIMIT, etc.)
+- **Note**: The grammar is defined but **not yet wired** into the executor. The executor uses hand-rolled string parsing. To integrate Pest:
+  1. Add a `SqlParser` type and `parse(sql) -> Result<Ast, Error>` using the grammar
+  2. Replace the `execute()` dispatch logic in `sql/mod.rs` to use the AST instead of string matching
+3. Run `cargo build` after grammar changes
 4. Use `cargo test` for regression testing
 
 ### Testing Strategy

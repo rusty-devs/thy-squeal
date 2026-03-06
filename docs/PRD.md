@@ -321,35 +321,45 @@ repl:
 ```
 thy-squeal/                          # Cargo workspace
 ├── Cargo.toml                       # Workspace config
-├── thy-squeal.yaml.example          # Server config template
 ├── server/                          # Server crate
 │   ├── Cargo.toml
 │   └── src/
-│       ├── main.rs                  # Server entry (Axum HTTP)
+│       ├── main.rs                  # Server entry (Axum HTTP, /, /health, /_query)
 │       ├── config.rs                # YAML config loading
-│       └── sql.pest                 # SQL grammar
+│       ├── storage/                 # In-memory storage engine
+│       │   └── mod.rs               # Database, Table, Row, Value, DataType
+│       ├── sql/                     # SQL execution (hand-rolled parsing)
+│       │   └── mod.rs               # Executor, QueryResult
+│       └── sql.pest                 # SQL grammar (defined, not yet wired)
 ├── client/                          # Client crate
 │   ├── Cargo.toml
 │   └── src/
 │       ├── main.rs                  # Client CLI (Clap)
-│       ├── config.rs                # Client config
-│       ├── http.rs                  # HTTP client
-│       └── repl.rs                  # REPL (rustyline)
+│       ├── config.rs                # Client config (~/.thy-squeal/config.yaml)
+│       ├── http.rs                  # HTTP client (POST /_query)
+│       └── repl.rs                  # REPL (rustyline; SQL exec not wired)
 ├── docs/
 │   ├── PRD.md
 │   ├── TODO.md
+│   ├── MVP-ARCHITECTURE.md          # MVP architecture suggestions
 │   └── features/
 │       └── *.md
-├── examples/
-│   └── *.sql
 └── LICENSE, README.md
 ```
 
-### Current Status
+### Current Status (as of v0.1)
 - [x] Workspace setup
 - [x] Server binary with Axum HTTP on port 9200
 - [x] Client binary with REPL
 - [x] YAML config loading
+- [x] GET /, GET /health, POST /_query endpoints
+- [x] CORS middleware
+- [x] SQL grammar (`sql.pest`) — Pest grammar exists but **executor uses hand-rolled string parsing** (not Pest)
+- [x] In-memory storage: CREATE TABLE, DROP TABLE, INSERT, SELECT (no WHERE/ORDER/LIMIT)
+- [x] Client `--http -e "SQL"` for one-off queries
+- [ ] TCP server (SQL protocol)
+- [ ] REPL SQL execution (REPL exists; execution from REPL not wired)
+- [ ] WHERE, UPDATE, DELETE at executor level
 
 ---
 
@@ -359,20 +369,23 @@ thy-squeal/                          # Cargo workspace
 - [x] Set up workspace with Cargo workspace
 - [x] Server binary with Axum HTTP (port 9200)
 - [x] Client binary with REPL
-- [x] Basic SQL parser (SELECT, INSERT, CREATE TABLE, DROP TABLE)
+- [x] Basic SQL parser (SELECT, INSERT, CREATE TABLE, DROP TABLE) — hand-rolled, not Pest
 - [x] In-memory table storage
 - [ ] TCP server (SQL protocol)
 
 ### Phase 2: HTTP API (v0.2)
 - [x] HTTP JSON API (basic Axum server running)
 - [x] POST /_query endpoint
+- [x] GET /, GET /health
+- [ ] GET /_stats
 - [ ] CRUD endpoints for tables (REST)
-- [ ] GET /health, /_stats endpoints
 
 ### Phase 3: Advanced SQL (v0.3)
-- [ ] JOINs, aggregations, GROUP BY
-- [ ] UPDATE, DELETE support
+- [ ] Wire Pest parser into executor (grammar already in sql.pest)
 - [ ] WHERE clause filtering
+- [ ] UPDATE, DELETE support
+- [ ] JOINs, aggregations, GROUP BY
+- [ ] ORDER BY, LIMIT/OFFSET
 - [ ] Indexes
 
 ### Phase 4: Search & KV (v0.4)
@@ -381,9 +394,12 @@ thy-squeal/                          # Cargo workspace
 - [ ] Redis-like commands
 
 ### Phase 5: Client (v0.5)
-- [x] thy-squeal-client CLI
-- [x] REPL with rustyline
+- [x] thy-squeal-client CLI (Clap)
+- [x] REPL with rustyline (history, .help, .quit)
+- [x] `--http -e "SQL"` execution
+- [ ] Wire REPL to execute SQL (HTTP or TCP)
 - [ ] JavaScript REPL (QuickJS)
+- [ ] Import/export
 
 ### Phase 6: Production (v1.0)
 - [ ] Authentication
