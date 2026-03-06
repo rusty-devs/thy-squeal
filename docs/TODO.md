@@ -31,23 +31,26 @@ See [docs/features/](./features/) for detailed specifications.
 See: [sql-parser.md](./features/sql-parser.md), [tcp-protocol.md](./features/tcp-protocol.md)
 
 ### SQL Parser
-- [ ] Extend Pest grammar for SELECT
-- [ ] Add INSERT support
-- [ ] Add UPDATE support
-- [ ] Add DELETE support
-- [ ] Implement parser AST
+- [x] Simple SQL parser for SELECT
+- [x] INSERT support
+- [ ] UPDATE support
+- [ ] DELETE support
 
 ### Storage
-- [ ] Create in-memory table struct
-- [ ] Implement row storage (Vec/HashMap)
-- [ ] Add basic CRUD operations
-- [ ] Add row ID generation
+- [x] In-memory table struct
+- [x] Row storage (Vec)
+- [x] Basic CRUD operations
+- [x] Row ID generation (UUID)
 
-### TCP Server
-- [ ] Set up Tokio runtime
-- [ ] Create TCP listener on port 3306
-- [ ] Implement simple wire protocol
-- [ ] Handle client connections
+### HTTP Server
+- [x] Set up Axum on port 9200
+- [x] POST /_query endpoint
+- [ ] Add more REST endpoints
+
+### Current Status
+- Server running on http://localhost:9200
+- SQL execution works via POST /_query
+- CREATE TABLE, INSERT, SELECT supported
 
 **Milestone v0.1**: Basic SQL server running, can execute SELECT/INSERT/UPDATE/DELETE
 

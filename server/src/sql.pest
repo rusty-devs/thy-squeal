@@ -1,9 +1,109 @@
-select = { "SELECT" ~ columns ~ "FROM" ~ table_name ~ ";" }
+// thy-squeal SQL Grammar
 
-columns = { "*" | column_list }
-column_list = { column ~ ("," ~ column)* }
-column = { ASCII_ALPHA+ }
+// Main statement
+statement = { SOI ~ (select_stmt | insert_stmt | update_stmt | delete_stmt | create_table_stmt | drop_table_stmt) ~ EOI }
 
-table_name = { ASCII_ALPHA+ }
+// SELECT statement
+select_stmt = { "SELECT" ~ distinct? ~ select_columns ~ "FROM" ~ table_name ~ where_clause? ~ order_by_clause? ~ limit_clause? ~ ";"? }
 
-WHITESPACE = _{ " " | "\t" | "\n" }
+distinct = { "DISTINCT" }
+
+select_columns = { "*" | column_list }
+column_list = { column_expr ~ ("," ~ column_expr)* }
+
+column_expr = { expression ~ alias? }
+
+alias = { "AS"? ~ identifier }
+
+// INSERT statement
+insert_stmt = { "INSERT" ~ "INTO" ~ table_name ~ "(" ~ column_list ~ ")" ~ "VALUES" ~ "(" ~ value_list ~ ")" ~ ";"? }
+
+value_list = { literal ~ ("," ~ literal)* }
+
+// UPDATE statement
+update_stmt = { "UPDATE" ~ table_name ~ "SET" ~ set_list ~ where_clause? ~ ";"? }
+
+set_list = { set_item ~ ("," ~ set_item)* }
+set_item = { identifier ~ "=" ~ expression }
+
+// DELETE statement
+delete_stmt = { "DELETE" ~ "FROM" ~ table_name ~ where_clause? ~ ";"? }
+
+// CREATE TABLE statement
+create_table_stmt = { "CREATE" ~ "TABLE" ~ table_name ~ "(" ~ column_defs ~ ")" ~ ";"? }
+
+column_defs = { column_def ~ ("," ~ column_def)* }
+column_def = { identifier ~ data_type }
+
+data_type = { "INT" | "INTEGER" | "BIGINT" | "SMALLINT" | "FLOAT" | "DOUBLE" | "REAL" | "BOOL" | "BOOLEAN" | "DATE" | "DATETIME" | "VARCHAR" | "TEXT" | "BLOB" | "JSON" }
+
+// DROP TABLE statement
+drop_table_stmt = { "DROP" ~ "TABLE" ~ table_name ~ ";"? }
+
+// WHERE clause
+where_clause = { "WHERE" ~ condition }
+
+condition = { expression ~ comparison_op ~ expression | expression ~ "IS" ~ "NULL" | expression ~ "IS" ~ "NOT" ~ "NULL" | "(" ~ condition ~ ")" ~ logical_op? ~ condition? }
+
+comparison_op = { "=" | "!=" | "<>" | "<" | ">" | "<=" | ">=" | "LIKE" | "IN" | "BETWEEN" }
+logical_op = { "AND" | "OR" }
+
+// ORDER BY clause
+order_by_clause = { "ORDER" ~ "BY" ~ order_by_list }
+order_by_list = { order_by_item ~ ("," ~ order_by_item)* }
+order_by_item = { expression ~ ("ASC" | "DESC")? }
+
+// LIMIT clause
+limit_clause = { "LIMIT" ~ limit_count ~ offset_clause? }
+offset_clause = { "OFFSET" ~ limit_count }
+limit_count = { ASCII_DIGIT+ }
+
+// Expressions
+expression = { term ~ (("+" | "-") ~ term)* }
+term = { factor ~ (("*" | "/" | "%") ~ factor)* }
+factor = { literal | column_ref | "(" ~ expression ~ ")" | "NOT" ~ factor | "-" ~ factor }
+
+literal = { string_literal | number_literal | boolean_literal | "NULL" }
+
+string_literal = { "'" ~ (!"'" ~ ANY)* ~ "'" }
+number_literal = { ("-" | "+")? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? }
+boolean_literal = { "TRUE" | "FALSE" | "true" | "false" }
+
+column_ref = { identifier ~ ("." ~ identifier)? }
+
+// Identifiers
+identifier = { (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_")* }
+table_name = { identifier }
+
+// Keywords (reserved)
+KW_SELECT = { "SELECT" }
+KW_FROM = { "FROM" }
+KW_WHERE = { "WHERE" }
+KW_INSERT = { "INSERT" }
+KW_INTO = { "INTO" }
+KW_VALUES = { "VALUES" }
+KW_UPDATE = { "UPDATE" }
+KW_SET = { "SET" }
+KW_DELETE = { "DELETE" }
+KW_CREATE = { "CREATE" }
+KW_TABLE = { "TABLE" }
+KW_DROP = { "DROP" }
+KW_ORDER = { "ORDER" }
+KW_BY = { "BY" }
+KW_LIMIT = { "LIMIT" }
+KW_OFFSET = { "OFFSET" }
+KW_ASC = { "ASC" }
+KW_DESC = { "DESC" }
+KW_DISTINCT = { "DISTINCT" }
+KW_AS = { "AS" }
+KW_AND = { "AND" }
+KW_OR = { "OR" }
+KW_NOT = { "NOT" }
+KW_NULL = { "NULL" }
+KW_IS = { "IS" }
+KW_TRUE = { "TRUE" | "true" }
+KW_FALSE = { "FALSE" | "false" }
+
+// Whitespace and comments
+WHITESPACE = _{ " " | "\t" | "\n" | "\r" }
+COMMENT = { "--" ~ (!"\n" ~ ANY)* }

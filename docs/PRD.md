@@ -359,17 +359,20 @@ thy-squeal/                          # Cargo workspace
 - [x] Set up workspace with Cargo workspace
 - [x] Server binary with Axum HTTP (port 9200)
 - [x] Client binary with REPL
-- [ ] Basic SQL parser (SELECT, INSERT, UPDATE, DELETE)
-- [ ] In-memory table storage
-- [ ] TCP server
+- [x] Basic SQL parser (SELECT, INSERT, CREATE TABLE, DROP TABLE)
+- [x] In-memory table storage
+- [ ] TCP server (SQL protocol)
 
 ### Phase 2: HTTP API (v0.2)
 - [x] HTTP JSON API (basic Axum server running)
-- [ ] CRUD endpoints for tables
+- [x] POST /_query endpoint
+- [ ] CRUD endpoints for tables (REST)
+- [ ] GET /health, /_stats endpoints
 
 ### Phase 3: Advanced SQL (v0.3)
 - [ ] JOINs, aggregations, GROUP BY
-- [ ] CREATE/DROP TABLE
+- [ ] UPDATE, DELETE support
+- [ ] WHERE clause filtering
 - [ ] Indexes
 
 ### Phase 4: Search & KV (v0.4)
@@ -378,8 +381,9 @@ thy-squeal/                          # Cargo workspace
 - [ ] Redis-like commands
 
 ### Phase 5: Client (v0.5)
-- [ ] thy-squeal-client CLI
-- [ ] JavaScript REPL
+- [x] thy-squeal-client CLI
+- [x] REPL with rustyline
+- [ ] JavaScript REPL (QuickJS)
 
 ### Phase 6: Production (v1.0)
 - [ ] Authentication
