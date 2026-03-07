@@ -1,8 +1,8 @@
-use super::super::ast::{CreateTableStmt, DropTableStmt, SqlStmt};
+use crate::storage::{Column, DataType};
+use super::super::ast::{CreateIndexStmt, CreateTableStmt, DropTableStmt, SqlStmt};
 use super::super::error::{SqlError, SqlResult};
 use super::super::parser::Rule;
 use super::utils::expect_identifier;
-use crate::storage::{Column, DataType};
 
 pub fn parse_create_table(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
     let mut inner = pair.into_inner();
@@ -21,10 +21,7 @@ pub fn parse_create_table(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStm
             continue;
         }
         let mut col_inner = col_def.into_inner();
-        let col_name = expect_identifier(
-            col_inner.find(|p| p.as_rule() == Rule::identifier),
-            "column name",
-        )?;
+        let col_name = expect_identifier(col_inner.find(|p| p.as_rule() == Rule::identifier), "column name")?;
         let type_str = col_inner
             .find(|p| p.as_rule() == Rule::data_type)
             .ok_or_else(|| SqlError::Parse("Missing column type".to_string()))?
@@ -47,4 +44,16 @@ pub fn parse_drop_table(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt>
         .map(|p| p.as_str().trim().to_string())
         .ok_or_else(|| SqlError::Parse("Missing table name".to_string()))?;
     Ok(SqlStmt::DropTable(DropTableStmt { name }))
+}
+
+pub fn parse_create_index(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
+    let mut inner = pair.into_inner();
+    let _name = expect_identifier(inner.find(|p| p.as_rule() == Rule::identifier), "index name")?;
+    let table = inner
+        .find(|p| p.as_rule() == Rule::table_name)
+        .map(|p| p.as_str().trim().to_string())
+        .ok_or_else(|| SqlError::Parse("Missing table name".to_string()))?;
+    let column = expect_identifier(inner.find(|p| p.as_rule() == Rule::identifier), "column name")?;
+
+    Ok(SqlStmt::CreateIndex(CreateIndexStmt { name: _name, table, column }))
 }

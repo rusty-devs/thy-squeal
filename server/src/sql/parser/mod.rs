@@ -32,6 +32,7 @@ pub fn parse(input: &str) -> SqlResult<SqlStmt> {
         Rule::insert_stmt => dml::parse_insert(kind_pair),
         Rule::create_table_stmt => ddl::parse_create_table(kind_pair),
         Rule::drop_table_stmt => ddl::parse_drop_table(kind_pair),
+        Rule::create_index_stmt => ddl::parse_create_index(kind_pair),
         Rule::update_stmt => dml::parse_update(kind_pair),
         Rule::delete_stmt => dml::parse_delete(kind_pair),
         _ => Err(SqlError::Parse("Unsupported SQL statement".to_string())),

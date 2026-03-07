@@ -16,9 +16,36 @@ pub enum Value {
 
 impl Eq for Value {}
 
+impl Ord for Value {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.partial_cmp(other).unwrap_or_else(|| {
+            // Discriminant is not Ord, use manual order for variants
+            let self_rank = self.variant_rank();
+            let other_rank = other.variant_rank();
+            self_rank.cmp(&other_rank)
+        })
+    }
+}
+
+impl Value {
+    fn variant_rank(&self) -> u8 {
+        match self {
+            Value::Null => 0,
+            Value::Int(_) => 1,
+            Value::Float(_) => 2,
+            Value::Bool(_) => 3,
+            Value::Date(_) => 4,
+            Value::DateTime(_) => 5,
+            Value::Text(_) => 6,
+            Value::Blob(_) => 7,
+            Value::Json(_) => 8,
+        }
+    }
+}
+
 impl std::hash::Hash for Value {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        core::mem::discriminant(self).hash(state);
+        self.variant_rank().hash(state);
         match self {
             Value::Null => {}
             Value::Int(i) => i.hash(state),

@@ -5,6 +5,7 @@ use crate::storage::{Column, Value};
 pub enum SqlStmt {
     CreateTable(CreateTableStmt),
     DropTable(DropTableStmt),
+    CreateIndex(CreateIndexStmt),
     Select(SelectStmt),
     Insert(InsertStmt),
     Update(UpdateStmt),
@@ -107,6 +108,13 @@ pub struct DeleteStmt {
 pub struct CreateTableStmt {
     pub name: String,
     pub columns: Vec<Column>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CreateIndexStmt {
+    pub name: String,
+    pub table: String,
+    pub column: String,
 }
 
 #[derive(Debug, Clone)]

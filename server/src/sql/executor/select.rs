@@ -15,12 +15,35 @@ impl Executor {
             .get_table(&stmt.table)
             .ok_or_else(|| SqlError::TableNotFound(stmt.table.clone()))?;
 
+        // 2. Identify candidate rows (Optimization: use index if possible)
+        let initial_rows: Vec<&Row> = if stmt.joins.is_empty() {
+            if let Some(ref cond) = stmt.where_clause {
+                if let ast::Condition::Comparison(ast::Expression::Column(col), ast::ComparisonOp::Eq, ast::Expression::Literal(val)) = cond {
+                    if let Some(index) = base_table.indexes.get(col) {
+                        if let Some(row_ids) = index.get(val) {
+                            base_table.rows.iter().filter(|r| row_ids.contains(&r.id)).collect()
+                        } else {
+                            vec![] // Value not in index
+                        }
+                    } else {
+                        base_table.rows.iter().collect()
+                    }
+                } else {
+                    base_table.rows.iter().collect()
+                }
+            } else {
+                base_table.rows.iter().collect()
+            }
+        } else {
+            base_table.rows.iter().collect()
+        };
+
         // Context is now Vec<(&Table, Row)> where Row is owned to support Null rows in LEFT JOIN
-        let mut joined_rows: Vec<JoinedContext> = base_table.rows.iter()
+        let mut joined_rows: Vec<JoinedContext> = initial_rows.into_iter()
             .map(|r| vec![(base_table, r.clone())])
             .collect();
 
-        // 2. Process JOINS
+        // 3. Process JOINS
         for join in &stmt.joins {
             let join_table = db.get_table(&join.table)
                 .ok_or_else(|| SqlError::TableNotFound(join.table.clone()))?;
@@ -53,7 +76,7 @@ impl Executor {
             joined_rows = next_joined_rows;
         }
 
-        // 3. Apply WHERE
+        // 4. Apply WHERE (again, to catch complex conditions or those not optimized by index)
         let mut matched_rows = Vec::new();
         if let Some(ref where_cond) = stmt.where_clause {
             for ctx in joined_rows {
@@ -66,14 +89,14 @@ impl Executor {
             matched_rows = joined_rows;
         }
 
-        // 4. Handle Aggregates and Grouping
+        // 5. Handle Aggregates and Grouping
         let has_aggregates = stmt.columns.iter().any(|c| matches!(c.expr, ast::Expression::FunctionCall(_)));
         
         if has_aggregates || !stmt.group_by.is_empty() {
              return self.exec_select_with_grouping_owned(stmt, matched_rows, outer_contexts).await;
         }
 
-        // 5. Apply ORDER BY
+        // 6. Apply ORDER BY
         if !stmt.order_by.is_empty() {
             let mut err = None;
             matched_rows.sort_by(|a, b| {
@@ -101,7 +124,7 @@ impl Executor {
             if let Some(e) = err { return Err(e); }
         }
 
-        // 6. Apply LIMIT and OFFSET
+        // 7. Apply LIMIT and OFFSET
         let final_rows = if let Some(ref limit) = stmt.limit {
             let offset = limit.offset.unwrap_or(0);
             matched_rows.into_iter().skip(offset).take(limit.count).collect()
@@ -109,7 +132,7 @@ impl Executor {
             matched_rows
         };
 
-        // 7. Project Columns
+        // 8. Project Columns
         let result_columns: Vec<String> = self.get_result_column_names(&stmt, base_table, &stmt.joins, &db);
 
         let mut projected_rows = Vec::new();
