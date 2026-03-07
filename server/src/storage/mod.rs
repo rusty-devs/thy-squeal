@@ -1,6 +1,9 @@
 pub mod error;
+pub mod index;
 pub mod info_schema;
+pub mod mutation;
 pub mod persistence;
+pub mod row;
 pub mod search;
 pub mod table;
 pub mod types;
@@ -10,8 +13,10 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub use error::StorageError;
+pub use index::TableIndex;
 pub use persistence::{Persister, WalRecord};
-pub use table::{Column, Row, Table, TableIndex};
+pub use row::{Column, Row};
+pub use table::Table;
 pub use types::DataType;
 pub use value::Value;
 
