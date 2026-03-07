@@ -81,6 +81,12 @@ See: [http-api.md](./features/http-api.md)
 - [ ] API Key support
 - [ ] TLS support
 
+### Transactions
+- [ ] Add BEGIN, COMMIT, ROLLBACK to grammar
+- [ ] Implement TransactionManager (transaction_id management)
+- [ ] Implement Copy-on-Write transaction state
+- [ ] Add transaction_id to HTTP API
+
 ## Phase 3: Advanced SQL (v0.3)
 See: [sql-parser.md](./features/sql-parser.md)
 
