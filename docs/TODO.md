@@ -37,9 +37,18 @@
 - [x] Transactions (BEGIN, COMMIT, ROLLBACK)
 - [x] Write-Ahead Logging (WAL) for durability
 - [x] Information Schema (tables, columns metadata)
-- [ ] SQL Dump/Restore (.sql script export) - **CURRENT FOCUS**
+- [ ] SQL Dump/Restore (.sql script export)
 - [ ] MySQL Protocol Compatibility (TCP 3306)
 - [ ] Parameterized Queries (Prepared Statements)
+
+## Code Quality & Refactoring - ✅ COMPLETE
+- [x] Decompose `eval.rs` (Expression vs Condition logic)
+- [x] Decompose `executor/aggregate.rs` (Grouping vs Functions)
+- [x] Decompose `parser/expr.rs` (Literals vs Logic)
+- [x] Decompose `executor/dml.rs` (Insert/Update/Delete modules)
+- [x] Move WAL recovery logic to `storage/wal.rs`
+- [x] Decompose `storage/table.rs` (Index and Mutation logic)
+- [x] Modularize test suite (`tests/` and `executor/tests/` directories)
 
 ## Phase 5: Advanced Features (v0.5)
 - [ ] Secondary Index optimization (using index only if selective)

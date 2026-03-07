@@ -98,6 +98,24 @@ pub fn parse_delete(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
     }))
 }
 
+pub fn parse_search(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
+    let mut inner = pair.into_inner();
+    // Skip KW_SEARCH
+    let _ = inner.next();
+
+    let table = inner
+        .next()
+        .map(|p| p.as_str().trim().to_string())
+        .ok_or_else(|| SqlError::Parse("Missing table name in SEARCH".to_string()))?;
+
+    let query = inner
+        .next()
+        .map(|p| p.as_str().trim_matches('\'').to_string())
+        .ok_or_else(|| SqlError::Parse("Missing query in SEARCH".to_string()))?;
+
+    Ok(SqlStmt::Search(crate::sql::ast::SearchStmt { table, query }))
+}
+
 pub fn parse_value_list(
     pair: pest::iterators::Pair<Rule>,
 ) -> SqlResult<Vec<crate::storage::Value>> {
