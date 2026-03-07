@@ -50,6 +50,7 @@ See: [sql-parser.md](./features/sql-parser.md), [tcp-protocol.md](./features/tcp
 - [x] Integration tests (end-to-end via HTTP)
 - [x] REPL executes SQL over HTTP
 - [x] Modularized codebase for maintainability
+- [x] Persistence via `sled` snapshots
 
 ### Current Status
 - Server running on http://localhost:9200
@@ -60,9 +61,13 @@ See: [sql-parser.md](./features/sql-parser.md), [tcp-protocol.md](./features/tcp
 - Aggregations (COUNT, SUM, AVG, MIN, MAX)
 - GROUP BY and HAVING support
 - Column aliases
+- DISTINCT support
+- INNER and LEFT JOIN support
+- Subquery support (correlated and IN)
 - Structured errors returned in JSON response
+- Persistence using `sled` snapshots
 
-**Milestone v0.1**: Basic SQL server running; Full SQL CRUD with filtering, sorting, and grouping.
+**Milestone v0.1**: Basic SQL server running; Full SQL CRUD with filtering, sorting, grouping, joins, and persistence.
 
 ## Phase 2: HTTP API (v0.2)
 See: [http-api.md](./features/http-api.md)
@@ -86,11 +91,16 @@ See: [sql-parser.md](./features/sql-parser.md)
 - [x] Add LIMIT/OFFSET
 - [x] Add DISTINCT
 - [x] Add column aliases
+- [x] Add subquery support
 
 ### Aggregations
 - [x] Add COUNT, SUM, AVG, MIN, MAX
 - [x] Add GROUP BY
 - [x] Add HAVING
+
+### Schema
+- [ ] Add ALTER TABLE
+- [ ] Add CREATE INDEX
 
 ## Phase 4: Search & KV (v0.4)
 See: [full-text-search.md](./features/full-text-search.md), [key-value-store.md](./features/key-value-store.md)
@@ -115,6 +125,6 @@ See: [js-repl-client.md](./features/js-repl-client.md)
 
 ## Phase 6: Production (v1.0)
 
-- [ ] Persistence: snapshot to disk (RDB-like)
+- [x] Persistence: snapshot to disk (`sled`)
 - [ ] WAL (Write Ahead Log) for durability
 - [ ] Distributed mode (Raft consensus)

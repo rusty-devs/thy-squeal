@@ -33,6 +33,7 @@ The parser is decomposed into submodules for maintainability:
 - `DISTINCT`
 - `INNER JOIN`
 - `LEFT JOIN`
+- `Subqueries` (correlated and IN)
 
 ### Data Manipulation Language (DML)
 - `INSERT INTO ... VALUES ...`

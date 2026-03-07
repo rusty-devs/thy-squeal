@@ -4,7 +4,8 @@ A lightweight SQL server with HTTP JSON API, built in Rust.
 
 ## Current Features
 
-- **SQL Database** - In-memory relational storage with a SQL subset: CREATE TABLE, DROP TABLE, SELECT, INSERT, UPDATE, DELETE, WHERE clause, ORDER BY, LIMIT, aggregations, GROUP BY, HAVING, DISTINCT, INNER JOIN, and LEFT JOIN support
+- **SQL Database** - In-memory relational storage with a SQL subset: CREATE TABLE, DROP TABLE, SELECT, INSERT, UPDATE, DELETE, WHERE clause, ORDER BY, LIMIT, aggregations, GROUP BY, HAVING, DISTINCT, INNER/LEFT JOIN, and subquery support
+- **Persistence** - Disk-based storage using `sled` for snapshots, ensuring data survives server restarts
 - **HTTP API** - JSON API on port 9200: `GET /`, `GET /health`, `POST /_query` for SQL execution
 - **CLI Client** - `thy-squeal-client` with interactive SQL REPL and `--http -e "SQL"` for one-off queries
 - **Configuration** - YAML config (`thy-squeal.yaml`) for server, storage, security, and logging
