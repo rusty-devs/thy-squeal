@@ -1,52 +1,58 @@
 # thy-squeal
 
-A lightweight SQL server with HTTP JSON API, built in Rust.
+A lightweight, MySQL-compatible SQL server with dual-protocol support (SQL over TCP + HTTP JSON API), featuring full-text search, dynamic caching, and Redis-like key-value capabilities.
 
-## Current Features
+## Features
 
-- **SQL Database** - In-memory relational storage with a SQL subset: CREATE TABLE, DROP TABLE, SELECT, INSERT, UPDATE, DELETE, WHERE clause, ORDER BY, LIMIT, aggregations, GROUP BY, HAVING, DISTINCT, INNER/LEFT JOIN, and subquery support
-- **Persistence** - Disk-based storage using `sled` for snapshots, ensuring data survives server restarts
-- **HTTP API** - JSON API on port 9200: `GET /`, `GET /health`, `POST /_query` for SQL execution
-- **CLI Client** - `thy-squeal-client` with interactive SQL REPL and `--http -e "SQL"` for one-off queries
-- **Configuration** - YAML config (`thy-squeal.yaml`) for server, storage, security, and logging
-
-## Roadmap (see [PRD](./docs/PRD.md))
-
-- MySQL-compatible SQL dialect (WHERE, JOINs, UPDATE, DELETE, aggregations)
-- TCP SQL protocol
-- Key-value store (Redis-like)
-- Full-text search
-- JavaScript REPL client
+- **SQL Engine**: Pest-based parser supporting SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, JOINs, Subqueries, Aggregations, and more.
+- **Full-Text Search**: Integrated Tantivy-powered search with `SEARCH` command.
+- **Persistence**: Hybrid in-memory storage with Sled-based snapshotting.
+- **HTTP API**: Axum-based JSON API for easy integration.
+- **REPL**: Interactive CLI client for manual querying and management.
+- **Observability**: Built-in `EXPLAIN` support for query plan visualization.
 
 ## Quick Start
 
+### Build and Run Server
 ```bash
-# Build
-cargo build
-
-# Run server (HTTP on port 9200)
+# Start the server (default HTTP port 9200)
 cargo run -p thy-squeal
+```
 
-# Run client
+### Run Client
+```bash
+# Start the interactive REPL
 cargo run -p thy-squeal-client
+```
 
-# Or run in release mode
-cargo run --release -p thy-squeal
+### Example Queries
+```sql
+-- Create a table
+CREATE TABLE users (id INT, name TEXT, email TEXT);
+
+-- Insert data
+INSERT INTO users (id, name, email) VALUES (1, 'Alice', 'alice@example.com');
+
+-- Search data
+SEARCH users 'alice';
+
+-- Complex query
+SELECT name, (SELECT COUNT(*) FROM posts WHERE user_id = users.id) as post_count
+FROM users
+WHERE id = 1;
 ```
 
 ## Documentation
 
-- [PRD](./docs/PRD.md) - Product requirements and architecture
-- [MVP Architecture](./docs/MVP-ARCHITECTURE.md) - Suggested changes for a minimal viable release
-- [TODO](./docs/TODO.md) - Implementation tasks
-- [Features](./docs/features/) - Detailed feature specifications
+- [MVP Architecture](./docs/MVP-ARCHITECTURE.md)
+- [Product Requirements (PRD)](./docs/PRD.md)
+- [Comparison with other Engines](./docs/COMPARISON.md)
+- [SQL Parser Details](./docs/features/sql-parser.md)
+- [Implementation TODO](./docs/TODO.md)
 
-## Binaries
+## Development
 
-| Binary | Description |
-|--------|-------------|
-| `thy-squeal` | SQL server (HTTP on port 9200; TCP SQL port 3306 planned) |
-| `thy-squeal-client` | CLI client with REPL (`--http` mode for server connection) |
+See [AGENTS.md](./AGENTS.md) for development guidelines, commands, and project structure.
 
 ## License
 
