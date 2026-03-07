@@ -7,7 +7,7 @@ use super::super::error::{SqlError, SqlResult};
 use super::Rule;
 
 pub use condition::{parse_condition, parse_where_clause};
-pub use functions::{parse_aggregate, parse_aggregate_type, parse_scalar_func, parse_scalar_func_type};
+pub use functions::{parse_aggregate, parse_scalar_func};
 pub use literal::parse_literal;
 
 pub fn parse_expression(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expression> {

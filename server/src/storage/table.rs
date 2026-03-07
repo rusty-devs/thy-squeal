@@ -218,10 +218,10 @@ impl Table {
         if let Some(ref search_index) = self.search_index {
             let mut field_values = Vec::new();
             for (i, col) in self.columns.iter().enumerate() {
-                if col.data_type == crate::storage::DataType::Text || col.data_type == crate::storage::DataType::VarChar {
-                    if let Some(val) = row.values.get(i).and_then(|v| v.as_text()) {
-                        field_values.push((col.name.clone(), val.to_string()));
-                    }
+                if (col.data_type == crate::storage::DataType::Text || col.data_type == crate::storage::DataType::VarChar)
+                    && let Some(val) = row.values.get(i).and_then(|v| v.as_text())
+                {
+                    field_values.push((col.name.clone(), val.to_string()));
                 }
             }
             search_index

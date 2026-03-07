@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::sql::executor::{Executor, QueryResult};
-use crate::storage::{Row, Value};
+use crate::storage::Value;
 use axum::{
     Json, Router,
     extract::State,

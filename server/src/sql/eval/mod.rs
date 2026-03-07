@@ -8,7 +8,6 @@ use super::error::{SqlError, SqlResult};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 
-pub use column::resolve_column;
 pub use condition::evaluate_condition_joined;
 pub use expression::evaluate_expression_joined;
 
