@@ -41,7 +41,7 @@ A MySQL-compatible SQL server with dual-protocol support (SQL over TCP + HTTP JS
 - **Information Schema**: Metadata querying (tables, columns, statistics)
 
 #### 3.1.2 Performance & Reliability
-- **Indexes**: B-Tree, Hash, Composite, JSON Path, and Bitmap indexes
+- **Indexes**: B-Tree, Hash, Composite, JSON Path, Functional, and Partial indexes
 - **Explain Plan**: Visualizing query execution strategy
 - **Write-Ahead Logging (WAL)**: Guaranteed durability for every write
 - **Schema Evolution**: `ALTER TABLE` support for non-destructive schema changes
@@ -77,7 +77,7 @@ thy-squeal/                          # Cargo workspace
 └── LICENSE, README.md
 ```
 
-### Current Status (as of v0.1)
+### Current Status (as of v0.3)
 - [x] Workspace setup
 - [x] Server binary with Axum HTTP on port 9200
 - [x] Client binary with REPL
@@ -94,6 +94,7 @@ thy-squeal/                          # Cargo workspace
 - [x] Subquery support (correlated and IN)
 - [x] EXPLAIN support (execution plan visualization)
 - [x] Full-Text Search integration (Tantivy)
+- [x] Advanced Indexing (B-Tree, Hash, Composite, JSON Path, Functional, Partial)
 - [x] Structured Error Handling (SqlError)
 - [x] Integration testing suite
 - [x] REPL SQL execution (wired via HTTP)
@@ -120,18 +121,18 @@ thy-squeal/                          # Cargo workspace
 - [ ] GET /_stats (Storage/cache statistics)
 - [ ] CRUD endpoints for tables (REST)
 
-### Phase 3: Advanced SQL (v0.3)
+### Phase 3: Advanced SQL (v0.3) - ✅ COMPLETE
 - [x] Wire Pest parser into executor
 - [x] WHERE clause filtering
 - [x] UPDATE, DELETE support
 - [x] Aggregations, GROUP BY, HAVING
 - [x] ORDER BY, LIMIT/OFFSET
 - [x] Subqueries (correlated and IN)
-- [ ] Multi-table JOINs (optimized)
-- [x] B-Tree Indexes
-- [ ] Hash, Composite, JSON, and Bitmap Indexes
+- [x] INNER and LEFT JOIN
+- [x] Advanced Indexing (Hash, Composite, JSON, Functional, Partial)
 
-### Phase 4: Reliability & Tooling (v0.4)
+### Phase 4: ACID & Protocol (v0.4)
+- [ ] **Transactions**: BEGIN, COMMIT, ROLLBACK
 - [ ] **SQL Dump/Restore**: Export/Import SQL scripts
 - [ ] **Information Schema**: Metadata discoverability
 - [x] **Explain Plan**: Query execution transparency (Completed)

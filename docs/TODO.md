@@ -15,7 +15,7 @@
 - [x] Implement Sled-based persistence (Snapshots)
 - [x] Periodic and DML-triggered background saving
 
-## Phase 3: Advanced SQL (v0.3) - 🏗 IN PROGRESS
+## Phase 3: Advanced SQL (v0.3) - ✅ COMPLETE
 - [x] Implement WHERE clause with complex logic
 - [x] Implement ORDER BY and LIMIT/OFFSET
 - [x] Implement DISTINCT
@@ -26,14 +26,15 @@
 - [x] Implement EXPLAIN plan
 - [x] Full-Text Search (Tantivy integration)
 - [x] B-Tree Indexes (Range & Equality)
-- [ ] Hash Indexes (O(1) equality lookups)
-- [ ] Composite Indexes (Multi-column)
-- [ ] JSON Path Indexes (Indexing nested fields)
-- [ ] Bitmap Indexes (Low-cardinality optimization)
-- [ ] Unique Constraints / Indexes
-- [ ] Transactions (BEGIN, COMMIT, ROLLBACK) - **CURRENT FOCUS**
+- [x] Hash Indexes (O(1) equality lookups)
+- [x] Composite Indexes (Multi-column)
+- [x] JSON Path Indexes (Indexing nested fields)
+- [x] Functional Indexes (Expression-based indexing)
+- [x] Partial Indexes (Conditional indexing)
+- [x] Unique Constraints / Indexes
 
-## Phase 4: Reliability & Protocol (v0.4)
+## Phase 4: ACID & Protocol (v0.4) - 🏗 IN PROGRESS
+- [ ] Transactions (BEGIN, COMMIT, ROLLBACK) - **CURRENT FOCUS**
 - [ ] Write-Ahead Logging (WAL) for durability
 - [ ] Information Schema (tables, columns metadata)
 - [ ] SQL Dump/Restore (.sql script export)
