@@ -30,8 +30,9 @@ The parser is decomposed into submodules for maintainability:
 - `Aggregations` (COUNT, SUM, AVG, MIN, MAX)
 - `GROUP BY`
 - `HAVING`
-- [ ] `DISTINCT`
-- [ ] `JOIN` (INNER, LEFT)
+- `DISTINCT`
+- `INNER JOIN`
+- [ ] `LEFT JOIN`
 
 ### Data Manipulation Language (DML)
 - `INSERT INTO ... VALUES ...`

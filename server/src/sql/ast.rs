@@ -116,6 +116,7 @@ pub struct DropTableStmt {
 pub struct SelectStmt {
     pub columns: Vec<SelectColumn>,
     pub table: String,
+    pub distinct: bool,
     pub joins: Vec<Join>,
     pub where_clause: Option<Condition>,
     pub group_by: Vec<Expression>,

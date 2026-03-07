@@ -8,7 +8,7 @@ use super::expr::{parse_expression, parse_where_clause, parse_condition};
 pub fn parse_select(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
     let inner = pair.into_inner();
 
-    let _distinct = inner.clone().find(|p| p.as_rule() == Rule::distinct).is_some();
+    let distinct = inner.clone().find(|p| p.as_rule() == Rule::distinct).is_some();
 
     let select_columns_pair = inner.clone().find(|p| p.as_rule() == Rule::select_columns).ok_or_else(|| SqlError::Parse("Missing SELECT columns".to_string()))?;
     let columns = parse_select_columns(select_columns_pair)?;
@@ -58,6 +58,7 @@ pub fn parse_select(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
     Ok(SqlStmt::Select(SelectStmt {
         columns,
         table,
+        distinct,
         joins,
         where_clause,
         group_by,

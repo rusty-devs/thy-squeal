@@ -113,6 +113,11 @@ impl Executor {
             projected_rows.push(row_values);
         }
 
+        if stmt.distinct {
+            let mut seen = std::collections::HashSet::new();
+            projected_rows.retain(|row| seen.insert(row.clone()));
+        }
+
         Ok(QueryResult {
             columns: result_columns,
             rows: projected_rows,
@@ -217,6 +222,11 @@ impl Executor {
                     result_rows.push(row_values);
                 }
             }
+        }
+
+        if stmt.distinct {
+            let mut seen = std::collections::HashSet::new();
+            result_rows.retain(|row| seen.insert(row.clone()));
         }
 
         Ok(QueryResult {

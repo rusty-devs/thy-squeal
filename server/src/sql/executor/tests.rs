@@ -224,6 +224,21 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_distinct() {
+        let exec = Executor::new();
+        exec.execute("CREATE TABLE t (name TEXT)").await.unwrap();
+        exec.execute("INSERT INTO t (name) VALUES ('alice')").await.unwrap();
+        exec.execute("INSERT INTO t (name) VALUES ('bob')").await.unwrap();
+        exec.execute("INSERT INTO t (name) VALUES ('alice')").await.unwrap();
+
+        let r = exec.execute("SELECT name FROM t").await.unwrap();
+        assert_eq!(r.rows.len(), 3);
+
+        let r = exec.execute("SELECT DISTINCT name FROM t").await.unwrap();
+        assert_eq!(r.rows.len(), 2);
+    }
+
+    #[tokio::test]
     async fn test_drop_table() {
         let exec = Executor::new();
         exec.execute("CREATE TABLE x (id INT)").await.unwrap();
