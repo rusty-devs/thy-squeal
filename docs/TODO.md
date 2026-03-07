@@ -34,19 +34,19 @@ See [docs/features/](./features/) for detailed specifications.
 See: [sql-parser.md](./features/sql-parser.md), [tcp-protocol.md](./features/tcp-protocol.md)
 
 ### SQL Parser
-- [x] Simple SQL parser for SELECT (hand-rolled string parsing)
+- [x] Simple SQL parser for SELECT (using Pest grammar)
 - [x] INSERT support
 - [x] CREATE TABLE, DROP TABLE
-- [ ] UPDATE support (Table has update; Executor does not parse/dispatch)
-- [ ] DELETE support (Table has delete; Executor does not parse/dispatch)
-- [ ] Wire Pest grammar (sql.pest) into executor
+- [x] UPDATE support
+- [x] DELETE support
+- [x] Wire Pest grammar (sql.pest) into executor
 
 ### Storage
 - [x] In-memory table struct
 - [x] Row storage (Vec)
 - [x] Basic CRUD operations (insert, select, update, delete at Table level)
 - [x] Row ID generation (UUID)
-- [ ] WHERE clause filtering (select_where is TODO stub)
+- [x] WHERE clause filtering (implemented via evaluate_condition)
 
 ### HTTP Server
 - [x] Set up Axum on port 9200
@@ -57,9 +57,10 @@ See: [sql-parser.md](./features/sql-parser.md), [tcp-protocol.md](./features/tcp
 ### Current Status
 - Server running on http://localhost:9200
 - SQL execution works via POST /_query
-- CREATE TABLE, DROP TABLE, INSERT, SELECT supported (no WHERE/ORDER/LIMIT)
+- CREATE TABLE, DROP TABLE, INSERT, SELECT, UPDATE, DELETE supported
+- WHERE clause support with basic operators (=, !=, >, <, >=, <=, LIKE, IS NULL)
 
-**Milestone v0.1**: Basic SQL server running; SELECT/INSERT/CREATE/DROP work; UPDATE/DELETE/WHERE pending
+**Milestone v0.1**: Basic SQL server running; SELECT/INSERT/UPDATE/DELETE/CREATE/DROP work with WHERE clause support.
 
 ## Phase 2: HTTP API (v0.2)
 See: [http-api.md](./features/http-api.md)
@@ -86,7 +87,7 @@ See: [sql-parser.md](./features/sql-parser.md)
 
 ### Query Features
 - [ ] Add JOIN support (INNER, LEFT)
-- [ ] Add WHERE clause operators (=, !=, >, <, >=, <=, LIKE, IN, BETWEEN, IS NULL)
+- [x] Add WHERE clause operators (=, !=, >, <, >=, <=, LIKE, IS NULL, IS NOT NULL)
 - [ ] Add ORDER BY
 - [ ] Add LIMIT/OFFSET
 - [ ] Add DISTINCT

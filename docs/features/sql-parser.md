@@ -5,22 +5,23 @@ Pest-based SQL parser for thy-squeal, supporting a MySQL-compatible dialect.
 
 ## Implementation Status
 
-- **Grammar** (`server/src/sql.pest`): ✅ Defined (SELECT, INSERT, UPDATE, DELETE, CREATE TABLE, DROP TABLE, WHERE, ORDER BY, LIMIT, expressions, etc.)
-- **Executor**: Uses **hand-rolled string parsing**, not Pest. Supported: CREATE TABLE, DROP TABLE, SELECT (no WHERE/ORDER/LIMIT), INSERT. UPDATE, DELETE, and WHERE are not wired at executor level.
-- **Next step**: Implement Pest-based parser module, produce AST, and wire executor to use AST instead of string matching.
+- **Grammar** (`server/src/sql.pest`): ✅ Integrated (SELECT, INSERT, UPDATE, DELETE, CREATE TABLE, DROP TABLE, WHERE, expressions, etc.)
+- **Executor**: Uses **Pest-based parser** to produce AST. Supported: CREATE TABLE, DROP TABLE, SELECT, INSERT, UPDATE, DELETE, and WHERE clause filtering.
+- **Next steps**: Implement ORDER BY, LIMIT, JOINs, and aggregations in the executor.
 
 ## Supported SQL Statements
 
 ### Data Query Language (DQL)
-- `SELECT` with columns, expressions, aliases
-- `DISTINCT`
+- `SELECT` with columns, expressions
 - `FROM` with table references
-- `JOIN` (INNER, LEFT)
-- `WHERE` conditions
-- `GROUP BY`
-- `HAVING`
-- `ORDER BY`
-- `LIMIT` / `OFFSET`
+- `WHERE` conditions (basic operators)
+- [ ] `DISTINCT`
+- [ ] `JOIN` (INNER, LEFT)
+- [ ] `GROUP BY`
+- [ ] `HAVING`
+- [ ] `ORDER BY`
+- [ ] `LIMIT` / `OFFSET`
+- [ ] `Aliases` for tables and columns
 
 ### Data Manipulation Language (DML)
 - `INSERT INTO ... VALUES ...`
@@ -28,10 +29,10 @@ Pest-based SQL parser for thy-squeal, supporting a MySQL-compatible dialect.
 - `DELETE FROM ... WHERE ...`
 
 ### Data Definition Language (DDL)
-- `CREATE TABLE ... (columns, types, indexes)`
+- `CREATE TABLE ... (columns, types)`
 - `DROP TABLE`
-- `CREATE INDEX`
-- `CREATE FULLTEXT INDEX`
+- [ ] `CREATE INDEX`
+- [ ] `CREATE FULLTEXT INDEX`
 
 ## Grammar Rules
 

@@ -328,9 +328,12 @@ thy-squeal/                          # Cargo workspace
 │       ├── config.rs                # YAML config loading
 │       ├── storage/                 # In-memory storage engine
 │       │   └── mod.rs               # Database, Table, Row, Value, DataType
-│       ├── sql/                     # SQL execution (hand-rolled parsing)
-│       │   └── mod.rs               # Executor, QueryResult
-│       └── sql.pest                 # SQL grammar (defined, not yet wired)
+│       ├── sql/                     # SQL execution (Pest-based parsing)
+│       │   ├── mod.rs               # Executor, QueryResult
+│       │   ├── parser.rs            # Pest parser implementation
+│       │   ├── ast.rs               # Abstract Syntax Tree
+│       │   └── eval.rs              # Expression and Condition evaluator
+│       └── sql.pest                 # SQL grammar (Pest)
 ├── client/                          # Client crate
 │   ├── Cargo.toml
 │   └── src/
@@ -354,12 +357,12 @@ thy-squeal/                          # Cargo workspace
 - [x] YAML config loading
 - [x] GET /, GET /health, POST /_query endpoints
 - [x] CORS middleware
-- [x] SQL grammar (`sql.pest`) — Pest grammar exists but **executor uses hand-rolled string parsing** (not Pest)
-- [x] In-memory storage: CREATE TABLE, DROP TABLE, INSERT, SELECT (no WHERE/ORDER/LIMIT)
+- [x] SQL grammar (`sql.pest`) — Pest parser integrated into executor
+- [x] In-memory storage: CREATE TABLE, DROP TABLE, INSERT, SELECT, UPDATE, DELETE
+- [x] WHERE clause filtering supported
 - [x] Client `--http -e "SQL"` for one-off queries
 - [ ] TCP server (SQL protocol)
 - [ ] REPL SQL execution (REPL exists; execution from REPL not wired)
-- [ ] WHERE, UPDATE, DELETE at executor level
 
 ---
 
@@ -369,7 +372,7 @@ thy-squeal/                          # Cargo workspace
 - [x] Set up workspace with Cargo workspace
 - [x] Server binary with Axum HTTP (port 9200)
 - [x] Client binary with REPL
-- [x] Basic SQL parser (SELECT, INSERT, CREATE TABLE, DROP TABLE) — hand-rolled, not Pest
+- [x] SQL parser using Pest (SELECT, INSERT, UPDATE, DELETE, CREATE TABLE, DROP TABLE, WHERE)
 - [x] In-memory table storage
 - [ ] TCP server (SQL protocol)
 
@@ -381,9 +384,9 @@ thy-squeal/                          # Cargo workspace
 - [ ] CRUD endpoints for tables (REST)
 
 ### Phase 3: Advanced SQL (v0.3)
-- [ ] Wire Pest parser into executor (grammar already in sql.pest)
-- [ ] WHERE clause filtering
-- [ ] UPDATE, DELETE support
+- [x] Wire Pest parser into executor (Completed)
+- [x] WHERE clause filtering (Completed)
+- [x] UPDATE, DELETE support (Completed)
 - [ ] JOINs, aggregations, GROUP BY
 - [ ] ORDER BY, LIMIT/OFFSET
 - [ ] Indexes
