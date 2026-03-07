@@ -26,6 +26,7 @@ dashmap = "5"
 moka = { version = "0.12", features = ["sync", "future"] }
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1", features = ["v4", "serde"] }
+sled = "0.34"
 tower = { version = "0.4", features = ["util"] }
 tower-http = { version = "0.5", features = ["cors", "trace"] }
 async-trait = "0.1"

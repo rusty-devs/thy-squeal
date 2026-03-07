@@ -12,7 +12,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_sql_lifecycle() {
-        let executor = Arc::new(Executor::new());
+        let executor = Arc::new(Executor::new(crate::storage::Database::new()));
         let config = crate::config::Config {
             server: crate::config::ServerConfig {
                 host: "127.0.0.1".to_string(),
@@ -162,7 +162,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_error_handling() {
-        let executor = Arc::new(Executor::new());
+        let executor = Arc::new(Executor::new(crate::storage::Database::new()));
         let config = crate::config::Config {
             server: crate::config::ServerConfig {
                 host: "127.0.0.1".to_string(),

@@ -32,6 +32,7 @@ impl From<StorageError> for SqlError {
             StorageError::RowNotFound(id) => SqlError::Runtime(format!("Row not found: {}", id)),
             StorageError::InvalidType(msg) => SqlError::TypeMismatch(msg),
             StorageError::DuplicateKey(msg) => SqlError::Runtime(format!("Duplicate key: {}", msg)),
+            StorageError::PersistenceError(msg) => SqlError::Storage(msg),
         }
     }
 }

@@ -144,7 +144,15 @@ async fn main() -> anyhow::Result<()> {
     info!("Configuration loaded: sql_port={}, http_port={}", 
           config.server.sql_port, config.server.http_port);
 
-    let executor = Arc::new(sql::Executor::new());
+    let db = if !config.storage.data_dir.is_empty() {
+        info!("Initializing persistence at {}", config.storage.data_dir);
+        let persister = Box::new(storage::persistence::SledPersister::new(&config.storage.data_dir).expect("Failed to open database"));
+        storage::Database::with_persister(persister).expect("Failed to load database")
+    } else {
+        storage::Database::new()
+    };
+
+    let executor = Arc::new(sql::Executor::new(db));
     
     let app = create_app(executor, config.clone());
 

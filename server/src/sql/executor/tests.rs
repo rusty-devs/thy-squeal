@@ -4,7 +4,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_table_insert_select() {
-        let exec = Executor::new();
+        let exec = Executor::new(crate::storage::Database::new());
         exec.execute("CREATE TABLE t (a INT, b TEXT, c FLOAT)")
             .await
             .unwrap();
@@ -21,7 +21,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_select_columns() {
-        let exec = Executor::new();
+        let exec = Executor::new(crate::storage::Database::new());
         exec.execute("CREATE TABLE t (a INT, b TEXT, c FLOAT)")
             .await
             .unwrap();
@@ -38,7 +38,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_select_where() {
-        let exec = Executor::new();
+        let exec = Executor::new(crate::storage::Database::new());
         exec.execute("CREATE TABLE users (id INT, name TEXT)")
             .await
             .unwrap();
@@ -66,7 +66,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_update() {
-        let exec = Executor::new();
+        let exec = Executor::new(crate::storage::Database::new());
         exec.execute("CREATE TABLE t (id INT, v TEXT)").await.unwrap();
         exec.execute("INSERT INTO t (id, v) VALUES (1, 'old')").await.unwrap();
         
@@ -79,7 +79,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_delete() {
-        let exec = Executor::new();
+        let exec = Executor::new(crate::storage::Database::new());
         exec.execute("CREATE TABLE t (id INT)").await.unwrap();
         exec.execute("INSERT INTO t (id) VALUES (1)").await.unwrap();
         exec.execute("INSERT INTO t (id) VALUES (2)").await.unwrap();
@@ -94,7 +94,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_order_by() {
-        let exec = Executor::new();
+        let exec = Executor::new(crate::storage::Database::new());
         exec.execute("CREATE TABLE t (id INT)").await.unwrap();
         exec.execute("INSERT INTO t (id) VALUES (3)").await.unwrap();
         exec.execute("INSERT INTO t (id) VALUES (1)").await.unwrap();
@@ -113,7 +113,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_limit_offset() {
-        let exec = Executor::new();
+        let exec = Executor::new(crate::storage::Database::new());
         exec.execute("CREATE TABLE t (id INT)").await.unwrap();
         for i in 1..=10 {
             exec.execute(&format!("INSERT INTO t (id) VALUES ({})", i))
@@ -138,7 +138,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_aggregations_and_aliases() {
-        let exec = Executor::new();
+        let exec = Executor::new(crate::storage::Database::new());
         exec.execute("CREATE TABLE sales (id INT, amount FLOAT)")
             .await
             .unwrap();
@@ -165,7 +165,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_group_by_having() {
-        let exec = Executor::new();
+        let exec = Executor::new(crate::storage::Database::new());
         exec.execute("CREATE TABLE orders (id INT, customer TEXT, amount FLOAT)")
             .await
             .unwrap();
@@ -201,7 +201,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_inner_join() {
-        let exec = Executor::new();
+        let exec = Executor::new(crate::storage::Database::new());
         exec.execute("CREATE TABLE users (id INT, name TEXT)").await.unwrap();
         exec.execute("CREATE TABLE posts (id INT, user_id INT, title TEXT)").await.unwrap();
         
@@ -225,7 +225,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_distinct() {
-        let exec = Executor::new();
+        let exec = Executor::new(crate::storage::Database::new());
         exec.execute("CREATE TABLE t (name TEXT)").await.unwrap();
         exec.execute("INSERT INTO t (name) VALUES ('alice')").await.unwrap();
         exec.execute("INSERT INTO t (name) VALUES ('bob')").await.unwrap();
@@ -240,7 +240,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_drop_table() {
-        let exec = Executor::new();
+        let exec = Executor::new(crate::storage::Database::new());
         exec.execute("CREATE TABLE x (id INT)").await.unwrap();
         exec.execute("DROP TABLE x").await.unwrap();
         let err = exec.execute("SELECT * FROM x").await.unwrap_err();

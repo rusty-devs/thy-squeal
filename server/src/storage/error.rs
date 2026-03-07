@@ -12,4 +12,6 @@ pub enum StorageError {
     InvalidType(String),
     #[error("Duplicate key: {0}")]
     DuplicateKey(String),
+    #[error("Persistence error: {0}")]
+    PersistenceError(String),
 }

@@ -21,9 +21,9 @@ pub struct Executor {
 }
 
 impl Executor {
-    pub fn new() -> Self {
+    pub fn new(db: Database) -> Self {
         Self {
-            db: tokio::sync::RwLock::new(Database::new()),
+            db: tokio::sync::RwLock::new(db),
         }
     }
 
