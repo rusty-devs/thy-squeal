@@ -77,8 +77,7 @@ POST /_query
 Content-Type: application/json
 
 {
-  "sql": "SELECT * FROM users WHERE age > ?",
-  "params": [18]
+  "sql": "SELECT id, name FROM users WHERE id = 1"
 }
 ```
 
@@ -86,12 +85,27 @@ Content-Type: application/json
 ```json
 {
   "success": true,
+  "columns": ["id", "name"],
   "data": [
-    {"id": 1, "name": "Alice", "age": 25},
-    {"id": 2, "name": "Bob", "age": 30}
+    {"id": 1, "name": "Alice"}
   ],
   "rows_affected": 0,
   "execution_time_ms": 5
+}
+```
+
+### Error Response
+```json
+{
+  "success": false,
+  "columns": [],
+  "data": [],
+  "rows_affected": 0,
+  "execution_time_ms": 2,
+  "error": {
+    "type": "TableNotFound",
+    "details": "users"
+  }
 }
 ```
 
@@ -122,18 +136,6 @@ Content-Type: application/json
         "highlight": {"bio": ["Senior <em>developer</em>"]}
       }
     ]
-  }
-}
-```
-
-## Error Response
-```json
-{
-  "success": false,
-  "error": {
-    "code": "PARSE_ERROR",
-    "message": "Syntax error at line 1",
-    "position": 15
   }
 }
 ```
