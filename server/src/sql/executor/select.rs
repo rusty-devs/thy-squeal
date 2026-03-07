@@ -54,7 +54,7 @@ impl Executor {
             if let Some(ref cond) = stmt.where_clause {
                 if let ast::Condition::Comparison(ast::Expression::Column(col), ast::ComparisonOp::Eq, ast::Expression::Literal(_)) = cond {
                     for (name, index) in &table.indexes {
-                        if index.columns().contains(col) && index.columns().len() == 1 {
+                        if index.columns().len() == 1 && &index.columns()[0] == col {
                             scan_type = match index {
                                 TableIndex::BTree { .. } => "Index Lookup (BTree)".to_string(),
                                 TableIndex::Hash { .. } => "Index Lookup (Hash)".to_string(),

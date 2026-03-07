@@ -191,10 +191,11 @@ impl Table {
     }
 
     pub fn create_index(&mut self, name: String, columns: Vec<String>, unique: bool, use_hash: bool) -> Result<(), StorageError> {
-        // Validate columns
-        for col in &columns {
-            if self.column_index(col).is_none() {
-                return Err(StorageError::ColumnNotFound(col.clone()));
+        // Validate columns/paths
+        for path in &columns {
+            let base_col = path.split('.').next().unwrap();
+            if self.column_index(base_col).is_none() {
+                return Err(StorageError::ColumnNotFound(base_col.to_string()));
             }
         }
 
@@ -215,19 +216,32 @@ impl Table {
     }
 
     fn extract_key(&self, row: &Row, columns: &[String]) -> Result<Vec<Value>, StorageError> {
-        let mut key = Vec::with_capacity(columns.len());
-        for col_name in columns {
-            let idx = self.column_index(col_name).unwrap();
-            key.push(row.values.get(idx).cloned().unwrap_or(Value::Null));
-        }
-        Ok(key)
+        self.extract_key_from_values(&row.values, columns)
     }
 
     fn extract_key_from_values(&self, values: &[Value], columns: &[String]) -> Result<Vec<Value>, StorageError> {
         let mut key = Vec::with_capacity(columns.len());
-        for col_name in columns {
-            let idx = self.column_index(col_name).unwrap();
-            key.push(values.get(idx).cloned().unwrap_or(Value::Null));
+        for path in columns {
+            let mut parts = path.split('.');
+            let base_col_name = parts.next().unwrap();
+            let base_idx = self.column_index(base_col_name).ok_or_else(|| StorageError::ColumnNotFound(base_col_name.to_string()))?;
+            let mut current_val = values.get(base_idx).cloned().unwrap_or(Value::Null);
+
+            // Traverse JSON path if any
+            for part in parts {
+                current_val = match current_val {
+                    Value::Json(v) => {
+                        if let Some(inner) = v.get(part) {
+                            Value::from_json(inner.clone())
+                        } else {
+                            Value::Null
+                        }
+                    }
+                    _ => Value::Null,
+                };
+                if current_val == Value::Null { break; }
+            }
+            key.push(current_val);
         }
         Ok(key)
     }
@@ -288,7 +302,6 @@ impl Table {
         let id = Uuid::new_v4().to_string();
         
         // 2. Update all indexes
-        // Pre-calculate keys to avoid multiple extract calls and potential borrow issues
         let mut index_data = Vec::new();
         for index in self.indexes.values() {
             index_data.push(self.extract_key_from_values(&values, index.columns())?);
@@ -337,7 +350,6 @@ impl Table {
             }
 
             // 2. Update all indexes
-            // Pre-calculate keys
             let mut keys = Vec::new();
             for index in self.indexes.values() {
                 let old_key = self.extract_key_from_values(&old_values, index.columns())?;
@@ -371,7 +383,6 @@ impl Table {
             let values = self.rows[pos].values.clone();
 
             // 1. Update all indexes
-            // Pre-calculate keys
             let mut keys = Vec::new();
             for index in self.indexes.values() {
                 keys.push(self.extract_key_from_values(&values, index.columns())?);

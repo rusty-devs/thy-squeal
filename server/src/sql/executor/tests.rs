@@ -342,6 +342,21 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_json_path_index() {
+        let exec = Executor::new(crate::storage::Database::new());
+        exec.execute("CREATE TABLE events (id INT, data JSON)").await.unwrap();
+        // Index on a nested JSON field
+        exec.execute("CREATE INDEX idx_event_id ON events (data.id)").await.unwrap();
+
+        exec.execute("INSERT INTO events (id, data) VALUES (1, '{\"id\": 100, \"type\": \"signup\"}')").await.unwrap();
+        exec.execute("INSERT INTO events (id, data) VALUES (2, '{\"id\": 101, \"type\": \"login\"}')").await.unwrap();
+
+        // Query using the JSON path
+        let r = exec.execute("EXPLAIN SELECT * FROM events WHERE data.id = 100").await.unwrap();
+        assert!(r.rows[0][1].as_text().unwrap().contains("Index Lookup (BTree)"));
+    }
+
+    #[tokio::test]
     async fn test_drop_table() {
         let exec = Executor::new(crate::storage::Database::new());
         exec.execute("CREATE TABLE x (id INT)").await.unwrap();

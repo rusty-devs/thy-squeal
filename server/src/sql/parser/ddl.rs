@@ -49,8 +49,6 @@ pub fn parse_drop_table(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt>
 pub fn parse_create_index(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
     let mut inner = pair.into_inner().peekable();
     
-    // Pest rule: create_index_stmt = { KW_CREATE ~ unique? ~ KW_INDEX ~ identifier ~ ... }
-    
     // Skip KW_CREATE
     let _ = inner.next();
 
@@ -76,12 +74,12 @@ pub fn parse_create_index(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStm
         .map(|p| p.as_str().trim().to_string())
         .ok_or_else(|| SqlError::Parse("Missing table name".to_string()))?;
     
-    // Columns list
-    let id_list = inner.find(|p| p.as_rule() == Rule::identifier_list)
+    // Columns list (may include paths)
+    let id_list = inner.find(|p| p.as_rule() == Rule::index_column_list)
         .ok_or_else(|| SqlError::Parse("Missing column list for index".to_string()))?;
     
     let columns: Vec<String> = id_list.into_inner()
-        .filter(|p| p.as_rule() == Rule::identifier)
+        .filter(|p| p.as_rule() == Rule::index_column)
         .map(|p| p.as_str().trim().to_string())
         .collect();
 
