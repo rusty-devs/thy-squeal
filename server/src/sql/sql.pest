@@ -6,7 +6,7 @@ statement = { SOI ~ (select_stmt | insert_stmt | update_stmt | delete_stmt | cre
 // SELECT statement
 select_stmt = { KW_SELECT ~ distinct? ~ select_columns ~ KW_FROM ~ table_name ~ join_clause* ~ where_clause? ~ group_by_clause? ~ having_clause? ~ order_by_clause? ~ limit_clause? }
 
-join_clause = { (KW_INNER? ~ KW_JOIN) ~ table_name ~ KW_ON ~ condition }
+join_clause = { ((KW_INNER | KW_LEFT)? ~ KW_JOIN) ~ table_name ~ KW_ON ~ condition }
 
 distinct = { KW_DISTINCT }
 
@@ -88,7 +88,7 @@ identifier = @{ !keyword ~ (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_
 table_name = { identifier }
 
 keyword = {
-    KW_SELECT | KW_FROM | KW_WHERE | KW_INSERT | KW_INTO | KW_JOIN | KW_INNER | KW_ON | KW_VALUES | KW_UPDATE | KW_SET | KW_DELETE |
+    KW_SELECT | KW_FROM | KW_WHERE | KW_INSERT | KW_INTO | KW_JOIN | KW_INNER | KW_LEFT | KW_ON | KW_VALUES | KW_UPDATE | KW_SET | KW_DELETE |
     KW_CREATE | KW_TABLE | KW_DROP | KW_GROUP | KW_BY | KW_ORDER | KW_HAVING | KW_LIMIT | KW_OFFSET | KW_ASC | KW_DESC |
     KW_DISTINCT | KW_AS | KW_AND | KW_OR | KW_NOT | KW_NULL | KW_IS | KW_TRUE | KW_FALSE |
     KW_COUNT | KW_SUM | KW_AVG | KW_MIN | KW_MAX
@@ -102,6 +102,7 @@ KW_INSERT   = @{ ^"INSERT" ~ !id_char }
 KW_INTO     = @{ ^"INTO" ~ !id_char }
 KW_JOIN     = @{ ^"JOIN" ~ !id_char }
 KW_INNER    = @{ ^"INNER" ~ !id_char }
+KW_LEFT     = @{ ^"LEFT" ~ !id_char }
 KW_ON       = @{ ^"ON" ~ !id_char }
 KW_VALUES   = @{ ^"VALUES" ~ !id_char }
 KW_UPDATE   = @{ ^"UPDATE" ~ !id_char }

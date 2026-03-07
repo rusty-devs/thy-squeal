@@ -224,6 +224,29 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_left_join() {
+        let exec = Executor::new(crate::storage::Database::new());
+        exec.execute("CREATE TABLE users (id INT, name TEXT)").await.unwrap();
+        exec.execute("CREATE TABLE posts (user_id INT, title TEXT)").await.unwrap();
+        
+        exec.execute("INSERT INTO users (id, name) VALUES (1, 'alice')").await.unwrap();
+        exec.execute("INSERT INTO users (id, name) VALUES (2, 'bob')").await.unwrap();
+        
+        exec.execute("INSERT INTO posts (user_id, title) VALUES (1, 'p1')").await.unwrap();
+
+        // Alice has a post, Bob does not. LEFT JOIN should show Alice with p1 and Bob with NULL.
+        let r = exec.execute("SELECT users.name, posts.title FROM users LEFT JOIN posts ON users.id = posts.user_id ORDER BY users.id ASC")
+            .await
+            .unwrap();
+        
+        assert_eq!(r.rows.len(), 2);
+        assert_eq!(r.rows[0][0].as_text(), Some("alice"));
+        assert_eq!(r.rows[0][1].as_text(), Some("p1"));
+        assert_eq!(r.rows[1][0].as_text(), Some("bob"));
+        assert_eq!(r.rows[1][1], crate::storage::Value::Null);
+    }
+
+    #[tokio::test]
     async fn test_distinct() {
         let exec = Executor::new(crate::storage::Database::new());
         exec.execute("CREATE TABLE t (name TEXT)").await.unwrap();

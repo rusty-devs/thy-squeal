@@ -80,7 +80,7 @@ See: [http-api.md](./features/http-api.md)
 See: [sql-parser.md](./features/sql-parser.md)
 
 ### Query Features
-- [x] Add JOIN support (INNER)
+- [x] Add JOIN support (INNER, LEFT)
 - [x] Add WHERE clause operators
 - [x] Add ORDER BY
 - [x] Add LIMIT/OFFSET

@@ -135,6 +135,7 @@ pub struct Join {
 #[derive(Debug, Clone, PartialEq)]
 pub enum JoinType {
     Inner,
+    Left,
 }
 
 #[derive(Debug, Clone)]

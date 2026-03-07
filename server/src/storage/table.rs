@@ -92,4 +92,11 @@ impl Table {
     pub fn column_index(&self, name: &str) -> Option<usize> {
         self.columns.iter().position(|c| c.name == name)
     }
+
+    pub fn null_row(&self) -> Row {
+        Row {
+            id: "null".to_string(),
+            values: vec![Value::Null; self.columns.len()],
+        }
+    }
 }

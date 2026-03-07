@@ -71,11 +71,16 @@ pub fn parse_select(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
 pub fn parse_join(pair: pest::iterators::Pair<Rule>) -> SqlResult<Join> {
     let mut inner = pair.into_inner();
     
-    // KW_JOIN might be preceded by KW_INNER
     let first = inner.next().ok_or_else(|| SqlError::Parse("Empty join clause".to_string()))?;
-    if first.as_rule() == Rule::KW_INNER {
-        inner.next().ok_or_else(|| SqlError::Parse("Missing JOIN keyword after INNER".to_string()))?;
-    }
+    let join_type = if first.as_rule() == Rule::KW_LEFT {
+        inner.next().ok_or_else(|| SqlError::Parse("Missing JOIN keyword after LEFT".to_string()))?;
+        JoinType::Left
+    } else {
+        if first.as_rule() == Rule::KW_INNER {
+            inner.next().ok_or_else(|| SqlError::Parse("Missing JOIN keyword after INNER".to_string()))?;
+        }
+        JoinType::Inner
+    };
     
     let table = inner
         .find(|p| p.as_rule() == Rule::table_name)
@@ -89,7 +94,7 @@ pub fn parse_join(pair: pest::iterators::Pair<Rule>) -> SqlResult<Join> {
 
     Ok(Join {
         table,
-        join_type: JoinType::Inner,
+        join_type,
         on,
     })
 }

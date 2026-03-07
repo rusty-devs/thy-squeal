@@ -13,9 +13,9 @@ impl Executor {
             .get_table(&stmt.table)
             .ok_or_else(|| SqlError::TableNotFound(stmt.table.clone()))?;
 
-        // A "joined row" is a list of (Table, Row) references
-        let mut joined_rows: Vec<Vec<(&Table, &Row)>> = base_table.rows.iter()
-            .map(|r| vec![(base_table, r)])
+        // Context is now Vec<(&Table, Row)> where Row is owned to support Null rows in LEFT JOIN
+        let mut joined_rows: Vec<Vec<(&Table, Row)>> = base_table.rows.iter()
+            .map(|r| vec![(base_table, r.clone())])
             .collect();
 
         // 2. Process JOINS
@@ -25,16 +25,27 @@ impl Executor {
             
             let mut next_joined_rows = Vec::new();
             
-            for existing_row in joined_rows {
+            for existing_ctx in joined_rows {
+                let mut found_match = false;
                 for new_row in &join_table.rows {
-                    // Create a potential combined context
-                    let mut combined_context = existing_row.clone();
-                    combined_context.push((join_table, new_row));
+                    // Prepare context for evaluation (need &Row references)
+                    let eval_ctx: Vec<(&Table, &Row)> = existing_ctx.iter()
+                        .map(|(t, r)| (*t, r))
+                        .chain(std::iter::once((join_table, new_row)))
+                        .collect();
                     
-                    // Evaluate ON condition
-                    if evaluate_condition_joined(&join.on, &combined_context)? {
-                        next_joined_rows.push(combined_context);
+                    if evaluate_condition_joined(&join.on, &eval_ctx)? {
+                        let mut next_ctx = existing_ctx.clone();
+                        next_ctx.push((join_table, new_row.clone()));
+                        next_joined_rows.push(next_ctx);
+                        found_match = true;
                     }
+                }
+
+                if !found_match && join.join_type == ast::JoinType::Left {
+                    let mut next_ctx = existing_ctx.clone();
+                    next_ctx.push((join_table, join_table.null_row()));
+                    next_joined_rows.push(next_ctx);
                 }
             }
             joined_rows = next_joined_rows;
@@ -43,9 +54,10 @@ impl Executor {
         // 3. Apply WHERE
         let mut matched_rows = Vec::new();
         if let Some(ref where_cond) = stmt.where_clause {
-            for row in joined_rows {
-                if evaluate_condition_joined(where_cond, &row)? {
-                    matched_rows.push(row);
+            for ctx in joined_rows {
+                let eval_ctx: Vec<(&Table, &Row)> = ctx.iter().map(|(t, r)| (*t, r)).collect();
+                if evaluate_condition_joined(where_cond, &eval_ctx)? {
+                    matched_rows.push(ctx);
                 }
             }
         } else {
@@ -56,19 +68,22 @@ impl Executor {
         let has_aggregates = stmt.columns.iter().any(|c| matches!(c.expr, ast::Expression::FunctionCall(_)));
         
         if has_aggregates || !stmt.group_by.is_empty() {
-             return self.exec_select_with_grouping(stmt, matched_rows).await;
+             return self.exec_select_with_grouping_owned(stmt, matched_rows).await;
         }
 
         // 5. Apply ORDER BY
         if !stmt.order_by.is_empty() {
             let mut err = None;
             matched_rows.sort_by(|a, b| {
+                let eval_a: Vec<(&Table, &Row)> = a.iter().map(|(t, r)| (*t, r)).collect();
+                let eval_b: Vec<(&Table, &Row)> = b.iter().map(|(t, r)| (*t, r)).collect();
+                
                 for item in &stmt.order_by {
-                    let val_a = match evaluate_expression_joined(&item.expr, a) {
+                    let val_a = match evaluate_expression_joined(&item.expr, &eval_a) {
                         Ok(v) => v,
                         Err(e) => { err = Some(e); return std::cmp::Ordering::Equal; }
                     };
-                    let val_b = match evaluate_expression_joined(&item.expr, b) {
+                    let val_b = match evaluate_expression_joined(&item.expr, &eval_b) {
                         Ok(v) => v,
                         Err(e) => { err = Some(e); return std::cmp::Ordering::Equal; }
                     };
@@ -87,7 +102,7 @@ impl Executor {
         // 6. Apply LIMIT and OFFSET
         let final_rows = if let Some(ref limit) = stmt.limit {
             let offset = limit.offset.unwrap_or(0);
-            matched_rows.iter().skip(offset).take(limit.count).cloned().collect()
+            matched_rows.into_iter().skip(offset).take(limit.count).collect()
         } else {
             matched_rows
         };
@@ -96,17 +111,18 @@ impl Executor {
         let result_columns: Vec<String> = self.get_result_column_names(&stmt, base_table, &stmt.joins, &db);
 
         let mut projected_rows = Vec::new();
-        for context in final_rows {
+        for ctx in final_rows {
+            let eval_ctx: Vec<(&Table, &Row)> = ctx.iter().map(|(t, r)| (*t, r)).collect();
             let mut row_values = Vec::new();
             for col in &stmt.columns {
                 match &col.expr {
                     ast::Expression::Star => {
-                        for (_table, row) in &context {
+                        for (_table, row) in &ctx {
                             row_values.extend(row.values.clone());
                         }
                     }
                     _ => {
-                        row_values.push(evaluate_expression_joined(&col.expr, &context)?);
+                        row_values.push(evaluate_expression_joined(&col.expr, &eval_ctx)?);
                     }
                 }
             }
@@ -153,21 +169,25 @@ impl Executor {
         names
     }
 
-    async fn exec_select_with_grouping(&self, stmt: SelectStmt, matched_rows: Vec<Vec<(&Table, &Row)>>) -> SqlResult<QueryResult> {
+    async fn exec_select_with_grouping_owned(&self, stmt: SelectStmt, matched_rows: Vec<Vec<(&Table, Row)>>) -> SqlResult<QueryResult> {
         let mut result_rows = Vec::new();
         let db = self.db.read().await;
         let base_table = db.get_table(&stmt.table).unwrap();
 
         if stmt.group_by.is_empty() {
             // Global aggregation
+            let eval_contexts: Vec<Vec<(&Table, &Row)>> = matched_rows.iter()
+                .map(|ctx| ctx.iter().map(|(t, r)| (*t, r)).collect())
+                .collect();
+
             let mut row_values = Vec::new();
             for col in &stmt.columns {
                 match &col.expr {
                     ast::Expression::FunctionCall(fc) => {
-                        row_values.push(self.eval_aggregate_joined(fc, &matched_rows)?);
+                        row_values.push(self.eval_aggregate_joined(fc, &eval_contexts)?);
                     },
                     _ => {
-                        if let Some(first_row_ctx) = matched_rows.first() {
+                        if let Some(first_row_ctx) = eval_contexts.first() {
                             row_values.push(evaluate_expression_joined(&col.expr, first_row_ctx)?);
                         } else {
                             row_values.push(Value::Null);
@@ -177,7 +197,7 @@ impl Executor {
             }
             
             let include_row = if let Some(ref having_cond) = stmt.having {
-                self.evaluate_having_joined(having_cond, &matched_rows)?
+                self.evaluate_having_joined(having_cond, &eval_contexts)?
             } else {
                 true
             };
@@ -187,18 +207,23 @@ impl Executor {
             }
         } else {
             // GROUP BY
-            let mut groups: std::collections::HashMap<Vec<Value>, Vec<Vec<(&Table, &Row)>>> = std::collections::HashMap::new();
+            let mut groups: std::collections::HashMap<Vec<Value>, Vec<Vec<(&Table, Row)>>> = std::collections::HashMap::new();
             for ctx in matched_rows {
+                let eval_ctx: Vec<(&Table, &Row)> = ctx.iter().map(|(t, r)| (*t, r)).collect();
                 let mut group_key = Vec::new();
                 for gb_expr in &stmt.group_by {
-                    group_key.push(evaluate_expression_joined(gb_expr, &ctx)?);
+                    group_key.push(evaluate_expression_joined(gb_expr, &eval_ctx)?);
                 }
                 groups.entry(group_key).or_default().push(ctx);
             }
 
-            for (_key, group_contexts) in groups {
+            for (_key, group_owned_contexts) in groups {
+                let group_eval_contexts: Vec<Vec<(&Table, &Row)>> = group_owned_contexts.iter()
+                    .map(|ctx| ctx.iter().map(|(t, r)| (*t, r)).collect())
+                    .collect();
+
                 let include_group = if let Some(ref having_cond) = stmt.having {
-                    self.evaluate_having_joined(having_cond, &group_contexts)?
+                    self.evaluate_having_joined(having_cond, &group_eval_contexts)?
                 } else {
                     true
                 };
@@ -208,10 +233,10 @@ impl Executor {
                     for col in &stmt.columns {
                         match &col.expr {
                             ast::Expression::FunctionCall(fc) => {
-                                row_values.push(self.eval_aggregate_joined(fc, &group_contexts)?);
+                                row_values.push(self.eval_aggregate_joined(fc, &group_eval_contexts)?);
                             },
                             _ => {
-                                if let Some(first_ctx) = group_contexts.first() {
+                                if let Some(first_ctx) = group_eval_contexts.first() {
                                     row_values.push(evaluate_expression_joined(&col.expr, first_ctx)?);
                                 } else {
                                     row_values.push(Value::Null);
