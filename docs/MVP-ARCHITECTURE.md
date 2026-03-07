@@ -81,7 +81,7 @@ Client (--http -e "SQL")  →  POST /_query  →  Executor::execute(sql)
 - [x] ORDER BY, LIMIT work for SELECT
 - [x] REPL executes SQL over HTTP
 - [x] Unit tests for SQL operations
-- [ ] Integration tests
+- [x] Integration tests
 - [x] Structured errors surfaced in JSON response
 
 **Estimated scope**: Low. Remaining tasks are integration tests and finishing Phase 2/3 features.

@@ -1,6 +1,8 @@
 mod config;
 mod storage;
 mod sql;
+#[cfg(test)]
+mod tests;
 
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -108,6 +110,25 @@ fn value_to_json(value: &storage::Value) -> serde_json::Value {
     }
 }
 
+pub fn create_app(executor: Arc<sql::Executor>, config: config::Config) -> Router {
+    let state = AppState { 
+        config,
+        executor,
+    };
+
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
+    Router::new()
+        .route("/", get(root))
+        .route("/health", get(health))
+        .route("/_query", post(execute_query))
+        .layer(cors)
+        .with_state(state)
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let subscriber = FmtSubscriber::builder()
@@ -126,22 +147,7 @@ async fn main() -> anyhow::Result<()> {
 
     let executor = Arc::new(sql::Executor::new());
     
-    let state = AppState { 
-        config: config.clone(),
-        executor,
-    };
-
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
-
-    let app = Router::new()
-        .route("/", get(root))
-        .route("/health", get(health))
-        .route("/_query", post(execute_query))
-        .layer(cors)
-        .with_state(state);
+    let app = create_app(executor, config.clone());
 
     let addr = SocketAddr::from(([0, 0, 0, 0], config.server.http_port));
     

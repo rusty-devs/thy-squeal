@@ -5,30 +5,16 @@ See [MVP-ARCHITECTURE.md](./MVP-ARCHITECTURE.md) for recommended architecture ch
 ## Feature Specifications
 See [docs/features/](./features/) for detailed specifications.
 
-| Feature | File |
-|---------|------|
-| SQL Parser | [features/sql-parser.md](./features/sql-parser.md) |
-| TCP Protocol | [features/tcp-protocol.md](./features/tcp-protocol.md) |
-| HTTP API | [features/http-api.md](./features/http-api.md) |
-| Key-Value Store | [features/key-value-store.md](./features/key-value-store.md) |
-| Full-Text Search | [features/full-text-search.md](./features/full-text-search.md) |
-| JS REPL Client | [features/js-repl-client.md](./features/js-repl-client.md) |
-| Table Caching | [features/table-caching.md](./features/table-caching.md) |
-| Authentication | [features/authentication.md](./features/authentication.md) |
+| Feature | Status | Priority |
+|---------|--------|----------|
+| SQL Parser (Pest) | ✅ Implemented | High |
+| Storage Engine | ✅ Implemented | High |
+| HTTP API | 🚧 Partial | High |
+| CLI Client | ✅ Implemented | Medium |
+| JS REPL | ❌ Not Started | Low |
+| TCP Protocol | ❌ Not Started | Medium |
 
-## Project Setup
-
-- [x] Set up workspace with Cargo workspace
-- [x] Create server binary (`thy-squeal`)
-- [x] Create client binary (`thy-squeal-client`)
-- [x] Set up logging with `tracing`
-- [x] Add config loading (YAML)
-
-### Current Status
-- Server runs on HTTP port 9200 (Axum)
-- Client REPL exists (rustyline); SQL execution in REPL wired to HTTP API
-- Config loads from `thy-squeal.yaml`
-- GET /, GET /health, POST /_query, CORS working
+---
 
 ## Phase 1: Foundation (v0.1)
 See: [sql-parser.md](./features/sql-parser.md), [tcp-protocol.md](./features/tcp-protocol.md)
@@ -59,6 +45,7 @@ See: [sql-parser.md](./features/sql-parser.md), [tcp-protocol.md](./features/tcp
 - [x] Implemented WHERE, UPDATE, DELETE
 - [x] Structured Error Handling (SqlError enum with JSON mapping)
 - [x] Unit tests for SQL operations
+- [x] Integration tests (end-to-end via HTTP)
 - [x] REPL executes SQL over HTTP
 
 ### Current Status
@@ -75,21 +62,18 @@ See: [sql-parser.md](./features/sql-parser.md), [tcp-protocol.md](./features/tcp
 See: [http-api.md](./features/http-api.md)
 
 ### HTTP Server
-- [x] Set up Axum on port 9200
-- [x] Add CORS middleware
-- [x] Create health endpoint (`/health`)
-- [x] Add server info endpoint (`/`)
-- [ ] GET `/_stats` - Storage/cache statistics
+- [ ] GET /_stats - Storage/cache statistics
+- [ ] Implement REST CRUD endpoints:
+  - [ ] GET /<db>/<table> - List rows
+  - [ ] POST /<db>/<table> - Insert row
+  - [ ] GET /<db>/<table>/<id> - Get row
+  - [ ] PUT /<db>/<table>/<id> - Update row
+  - [ ] DELETE /<db>/<table>/<id> - Delete row
 
-### REST Endpoints
-- [x] POST `/_query` - Execute SQL
-- [ ] GET `/<db>/<table>` - List rows
-- [ ] GET `/<db>/<table>/<id>` - Get row
-- [ ] POST `/<db>/<table>` - Insert row
-- [ ] PUT `/<db>/<table>/<id>` - Update row
-- [ ] DELETE `/<db>/<table>/<id>` - Delete row
-
-**Milestone v0.2**: HTTP JSON API working; CRUD endpoints and /_stats pending
+### Security
+- [ ] Basic Authentication
+- [ ] API Key support
+- [ ] TLS support (axum-server + rustls)
 
 ## Phase 3: Advanced SQL (v0.3)
 See: [sql-parser.md](./features/sql-parser.md)
@@ -109,51 +93,18 @@ See: [sql-parser.md](./features/sql-parser.md)
 
 ### Schema
 - [ ] Add CREATE TABLE
-- [ ] Add DROP TABLE
-- [ ] Add column type validation
-- [ ] Add DESCRIBE TABLE
-- [ ] Implement indexes (B-tree)
-- [ ] Add EXPLAIN query plan
-
-**Milestone v0.3**: Full SQL query capabilities
+- [ ] Add ALTER TABLE
+- [ ] Add CREATE INDEX
 
 ## Phase 4: Search & KV (v0.4)
-See: [key-value-store.md](./features/key-value-store.md), [full-text-search.md](./features/full-text-search.md)
+See: [full-text-search.md](./features/full-text-search.md), [key-value-store.md](./features/key-value-store.md)
 
-### Key-Value Store
-- [ ] Implement DashMap-based KV storage
-- [ ] Add SET/GET/DEL commands
-- [ ] Add TTL support (EX option)
-- [ ] Add INCR/DECR
-- [ ] Add HSET/HGET/HDEL (hashes)
-- [ ] Add LPUSH/RPUSH/LPOP/RPOP (lists)
-- [ ] Add SADD/SMEMBERS (sets)
-
-### Full-Text Search
-- [ ] Integrate Tantivy
-- [ ] Add CREATE FULLTEXT INDEX
-- [ ] Implement MATCH AGAINST syntax
-- [ ] Add search ranking
-- [ ] Add highlighting
-
-### HTTP KV Endpoints
-- [ ] GET `/kv/<key>`
-- [ ] PUT `/kv/<key>`
-- [ ] DELETE `/kv/<key>`
-- [ ] GET `/kv` - List with pattern
-
-**Milestone v0.4**: Redis-like KV and Elasticsearch-like search
+- [ ] Full-text search engine (tantivy or bleve style)
+- [ ] Redis-compatible KV commands (GET, SET, DEL, EXPIRE)
+- [ ] Table-level caching (moka)
 
 ## Phase 5: Client (v0.5)
 See: [js-repl-client.md](./features/js-repl-client.md)
-
-### CLI
-- [x] Set up Clap for argument parsing
-- [x] Add `-e` / `--execute` flag
-- [x] Add `-h` / `--host` flag
-- [x] Add `--http` flag for HTTP mode
-- [ ] Add `--export` / `--import`
-- [ ] Wire `Query` subcommand to execute SQL
 
 ### REPL
 - [x] Integrate rustyline
@@ -165,41 +116,17 @@ See: [js-repl-client.md](./features/js-repl-client.md)
 
 ### JavaScript Runtime
 - [ ] Integrate quickjs-rs
-- [ ] Expose JS API for connections
-- [ ] Add `client.query()` function
-- [ ] Add `client.kv` namespace
-- [ ] Add `conn.search()` function
-- [ ] Support multi-line input
-
-**Milestone v0.5**: Full client with JS REPL
+- [ ] Add `conn.query(sql)` bridge to JS
+- [ ] Add script execution: `thy-squeal-client -f script.js`
 
 ## Phase 6: Production (v1.0)
-See: [authentication.md](./features/authentication.md), [table-caching.md](./features/table-caching.md)
 
-### Security
-- [ ] Add authentication (username/password)
-- [ ] Add TLS support
-- [ ] Implement parameterized queries (SQL injection prevention)
-
-### Reliability
-- [ ] Add graceful shutdown
-- [ ] Implement KV persistence (sled)
-- [ ] Add snapshot/restore
-- [ ] Add request timeouts
-
-### Caching
-- [ ] Implement configurable cache per table
-- [ ] Add LRU eviction
-- [ ] Add LFU eviction
-- [ ] Add FIFO eviction
-- [ ] Expose cache stats via HTTP
-
-### Observability
-- [ ] Add metrics endpoint
-- [ ] Add query logging
-- [ ] Add performance profiling
-
-**Milestone v1.0**: Production-ready release
+- [ ] Persistence: snapshot to disk (RDB-like)
+- [ ] WAL (Write Ahead Log) for durability
+- [ ] Distributed mode (Raft consensus)
+- [ ] Metrics (Prometheus)
+- [ ] Docker compose for full stack
+- [ ] Kubernetes Helm chart for release
 
 ---
 
