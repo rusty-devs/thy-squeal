@@ -161,6 +161,7 @@ pub struct DropTableStmt {
 pub struct SelectStmt {
     pub columns: Vec<SelectColumn>,
     pub table: String,
+    pub table_alias: Option<String>,
     pub distinct: bool,
     pub joins: Vec<Join>,
     pub where_clause: Option<Condition>,
@@ -173,6 +174,7 @@ pub struct SelectStmt {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Join {
     pub table: String,
+    pub table_alias: Option<String>,
     pub join_type: JoinType,
     pub on: Condition,
 }

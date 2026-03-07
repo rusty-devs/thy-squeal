@@ -1,4 +1,5 @@
 pub mod error;
+pub mod info_schema;
 pub mod persistence;
 pub mod search;
 pub mod table;
@@ -137,9 +138,7 @@ impl Database {
     ) -> Result<(), StorageError> {
         match record {
             WalRecord::CreateTable { name, columns, .. } => {
-                self.state
-                    .tables
-                    .insert(name.clone(), Table::new(name, columns));
+                self.state.tables.insert(name.clone(), Table::new(name, columns));
             }
             WalRecord::DropTable { name, .. } => {
                 self.state.tables.remove(&name);
@@ -151,7 +150,10 @@ impl Database {
                 }
             }
             WalRecord::Update {
-                table, id, values, ..
+                table,
+                id,
+                values,
+                ..
             } => {
                 let db_state = self.state.clone();
                 if let Some(t) = self.state.get_table_mut(&table) {

@@ -3,7 +3,7 @@
 // Main statement
 statement = { SOI ~ (explain_stmt | search_stmt | select_stmt | insert_stmt | update_stmt | delete_stmt | create_table_stmt | drop_table_stmt | create_index_stmt | begin_stmt | commit_stmt | rollback_stmt) ~ ";"? ~ EOI }
 
-explain_stmt = { KW_EXPLAIN ~ select_stmt }
+explain_stmt = { KW_EXPLAIN ~ select_stmt_inner }
 
 search_stmt = { KW_SEARCH ~ table_name ~ string_literal }
 
@@ -12,18 +12,21 @@ commit_stmt = { KW_COMMIT }
 rollback_stmt = { KW_ROLLBACK }
 
 // SELECT statement
-select_stmt = { KW_SELECT ~ distinct? ~ select_columns ~ KW_FROM ~ table_name ~ join_clause* ~ where_clause? ~ group_by_clause? ~ having_clause? ~ order_by_clause? ~ limit_clause? }
+select_stmt = { select_stmt_inner }
+select_stmt_inner = { KW_SELECT ~ distinct? ~ select_columns ~ KW_FROM ~ table_name_with_alias ~ join_clause* ~ where_clause? ~ group_by_clause? ~ having_clause? ~ order_by_clause? ~ limit_clause? }
 
-join_clause = { ((KW_INNER | KW_LEFT)? ~ KW_JOIN) ~ table_name ~ KW_ON ~ condition }
+table_name_with_alias = { table_name ~ alias? }
+
+join_clause = { ((KW_INNER | KW_LEFT)? ~ KW_JOIN) ~ table_name_with_alias ~ KW_ON ~ condition }
 
 distinct = { KW_DISTINCT }
 
-select_columns = { "*" | column_list }
+select_columns = { star | column_list }
 column_list = { column_expr ~ ("," ~ column_expr)* }
 
 column_expr = { expression ~ alias? }
 
-alias = { (KW_AS ~ identifier)? }
+alias = { (KW_AS ~ identifier) | identifier }
 
 // INSERT statement
 insert_stmt = { KW_INSERT ~ KW_INTO ~ table_name ~ ("(" ~ column_list ~ ")")? ~ KW_VALUES ~ "(" ~ value_list ~ ")" }
@@ -68,13 +71,13 @@ group_by_clause = { KW_GROUP ~ KW_BY ~ column_list }
 having_clause = { KW_HAVING ~ condition }
 
 condition = {
+    "(" ~ condition ~ ")" ~ (logical_op ~ condition)? |
     expression ~ comparison_op ~ expression |
     expression ~ KW_IS ~ (KW_NOT? ~ KW_NULL) |
-    expression ~ KW_IN ~ "(" ~ select_stmt ~ ")" |
-    "(" ~ condition ~ ")" ~ (logical_op ~ condition)?
+    expression ~ KW_IN ~ "(" ~ select_stmt_inner ~ ")"
 }
 
-comparison_op = { "=" | "!=" | "<>" | "<" | ">" | "<=" | ">=" | "LIKE" | "IN" | "BETWEEN" }
+comparison_op = { "!=" | "<>" | "<=" | ">=" | "=" | "<" | ">" | "LIKE" | "IN" | "BETWEEN" }
 logical_op = { KW_AND | KW_OR }
 
 // ORDER BY clause
@@ -88,9 +91,13 @@ offset_clause = { KW_OFFSET ~ limit_count }
 limit_count = @{ ASCII_DIGIT+ }
 
 // Expressions
-expression = { term ~ (("+" | "-") ~ term)* }
-term = { factor ~ (("*" | "/" | "%") ~ factor)* }
-factor = { aggregate_func | scalar_func | column_ref | literal | "(" ~ select_stmt ~ ")" | "(" ~ expression ~ ")" | KW_NOT ~ factor | "-" ~ factor }
+expression = { term ~ (plus_minus ~ term)* }
+plus_minus = { "+" | "-" }
+
+term = { factor ~ (mul_div ~ factor)* }
+mul_div = { "*" | "/" | "%" }
+
+factor = { aggregate_func | scalar_func | column_ref | literal | "(" ~ select_stmt_inner ~ ")" | "(" ~ expression ~ ")" | KW_NOT ~ factor | "-" ~ factor }
 
 aggregate_func = { agg_type ~ "(" ~ ( star | expression ) ~ ")" }
 agg_type = { KW_COUNT | KW_SUM | KW_AVG | KW_MIN | KW_MAX }
@@ -105,11 +112,11 @@ string_literal = { "'" ~ (!"'" ~ ANY)* ~ "'" }
 number_literal = { ("-" | "+")? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? }
 boolean_literal = { KW_TRUE | KW_FALSE }
 
-column_ref = { (identifier ~ ".")? ~ identifier }
+column_ref = { identifier ~ ("." ~ identifier)* }
 
 // Identifiers
 identifier = @{ !keyword ~ (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_")* }
-table_name = { identifier }
+table_name = { column_ref }
 
 keyword = {
     KW_SELECT | KW_FROM | KW_WHERE | KW_INSERT | KW_INTO | KW_INDEX | KW_JOIN | KW_INNER | KW_LEFT | KW_ON | KW_VALUES | KW_UPDATE | KW_SET | KW_DELETE | KW_EXPLAIN | KW_SEARCH |

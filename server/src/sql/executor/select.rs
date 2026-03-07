@@ -1,4 +1,5 @@
 use crate::storage::{DatabaseState, Row, Table, TableIndex, Value};
+use crate::storage::info_schema::get_info_schema_tables;
 use super::super::ast::{self, SelectStmt};
 use super::super::error::{SqlError, SqlResult};
 use super::super::eval::{evaluate_condition_joined, evaluate_expression_joined, Evaluator};
@@ -6,7 +7,7 @@ use super::{QueryResult, Executor};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 
-type JoinedContext<'a> = Vec<(&'a Table, Row)>;
+type JoinedContext<'a> = Vec<(&'a Table, Option<String>, Row)>;
 
 impl Executor {
     pub(crate) async fn exec_search(
@@ -168,15 +169,26 @@ impl Executor {
     pub fn exec_select_recursive<'a>(
         &'a self,
         stmt: SelectStmt,
-        outer_contexts: &'a [(&'a Table, &'a Row)],
+        outer_contexts: &'a [(&'a Table, Option<&'a str>, &'a Row)],
         db_state: &'a DatabaseState,
         tx_id: Option<&'a str>,
     ) -> BoxFuture<'a, SqlResult<QueryResult>> {
         async move {
-            // 1. Get base table
-            let base_table = db_state
-                .get_table(&stmt.table)
-                .ok_or_else(|| SqlError::TableNotFound(stmt.table.clone()))?;
+            // Check for information_schema
+            let info_schema_tables;
+            let target_table = if stmt.table.starts_with("information_schema.") {
+                let table_name = stmt.table.strip_prefix("information_schema.").unwrap();
+                info_schema_tables = get_info_schema_tables(db_state);
+                info_schema_tables.get(table_name)
+                    .ok_or_else(|| SqlError::TableNotFound(stmt.table.clone()))?
+            } else {
+                db_state
+                    .get_table(&stmt.table)
+                    .ok_or_else(|| SqlError::TableNotFound(stmt.table.clone()))?
+            };
+
+            let base_table = target_table;
+            let base_alias = stmt.table_alias.clone();
 
             // 2. Identify candidate rows (Optimization: use index if possible)
             let initial_rows: Vec<&Row> = if stmt.joins.is_empty() {
@@ -211,28 +223,32 @@ impl Executor {
                 base_table.rows.iter().collect()
             };
 
-            // Context is now Vec<(&Table, Row)> where Row is owned to support Null rows in LEFT JOIN
+            // Context is now Vec<(&Table, Option<String>, Row)>
             let mut joined_rows: Vec<JoinedContext> = initial_rows
                 .into_iter()
-                .map(|r| vec![(base_table, r.clone())])
+                .map(|r| vec![(base_table, base_alias.clone(), r.clone())])
                 .collect();
 
             // 3. Process JOINS
             for join in &stmt.joins {
-                let join_table = db_state
-                    .get_table(&join.table)
-                    .ok_or_else(|| SqlError::TableNotFound(join.table.clone()))?;
-
+                let join_table = if join.table.starts_with("information_schema.") {
+                    return Err(SqlError::Runtime("JOIN with information_schema is not yet supported".to_string()));
+                } else {
+                    db_state.get_table(&join.table)
+                        .ok_or_else(|| SqlError::TableNotFound(join.table.clone()))?
+                };
+                
+                let join_alias = join.table_alias.clone();
                 let mut next_joined_rows = Vec::new();
 
                 for existing_ctx in joined_rows {
                     let mut found_match = false;
                     for new_row in &join_table.rows {
-                        // Prepare context for evaluation (need &Row references)
-                        let eval_ctx: Vec<(&Table, &Row)> = existing_ctx
+                        // Prepare context for evaluation
+                        let eval_ctx: Vec<(&Table, Option<&str>, &Row)> = existing_ctx
                             .iter()
-                            .map(|(t, r)| (*t, r))
-                            .chain(std::iter::once((join_table, new_row)))
+                            .map(|(t, a, r)| (*t, a.as_deref(), r))
+                            .chain(std::iter::once((join_table, join_alias.as_deref(), new_row)))
                             .collect();
 
                         if evaluate_condition_joined(
@@ -243,7 +259,7 @@ impl Executor {
                             db_state,
                         )? {
                             let mut next_ctx = existing_ctx.clone();
-                            next_ctx.push((join_table, new_row.clone()));
+                            next_ctx.push((join_table, join_alias.clone(), new_row.clone()));
                             next_joined_rows.push(next_ctx);
                             found_match = true;
                         }
@@ -251,7 +267,7 @@ impl Executor {
 
                     if !found_match && join.join_type == ast::JoinType::Left {
                         let mut next_ctx = existing_ctx.clone();
-                        next_ctx.push((join_table, join_table.null_row()));
+                        next_ctx.push((join_table, join_alias.clone(), join_table.null_row()));
                         next_joined_rows.push(next_ctx);
                     }
                 }
@@ -262,7 +278,7 @@ impl Executor {
             let mut matched_rows = Vec::new();
             if let Some(ref where_cond) = stmt.where_clause {
                 for ctx in joined_rows {
-                    let eval_ctx: Vec<(&Table, &Row)> = ctx.iter().map(|(t, r)| (*t, r)).collect();
+                    let eval_ctx: Vec<(&Table, Option<&str>, &Row)> = ctx.iter().map(|(t, a, r)| (*t, a.as_deref(), r)).collect();
                     if evaluate_condition_joined(
                         self,
                         where_cond,
@@ -299,8 +315,8 @@ impl Executor {
             if !stmt.order_by.is_empty() {
                 let mut err = None;
                 matched_rows.sort_by(|a, b| {
-                    let eval_a: Vec<(&Table, &Row)> = a.iter().map(|(t, r)| (*t, r)).collect();
-                    let eval_b: Vec<(&Table, &Row)> = b.iter().map(|(t, r)| (*t, r)).collect();
+                    let eval_a: Vec<(&Table, Option<&str>, &Row)> = a.iter().map(|(t, al, r)| (*t, al.as_deref(), r)).collect();
+                    let eval_b: Vec<(&Table, Option<&str>, &Row)> = b.iter().map(|(t, al, r)| (*t, al.as_deref(), r)).collect();
 
                     for item in &stmt.order_by {
                         let val_a = match evaluate_expression_joined(
@@ -365,12 +381,12 @@ impl Executor {
 
             let mut projected_rows = Vec::new();
             for ctx in final_rows {
-                let eval_ctx: Vec<(&Table, &Row)> = ctx.iter().map(|(t, r)| (*t, r)).collect();
+                let eval_ctx: Vec<(&Table, Option<&str>, &Row)> = ctx.iter().map(|(t, a, r)| (*t, a.as_deref(), r)).collect();
                 let mut row_values = Vec::new();
                 for col in &stmt.columns {
                     match &col.expr {
                         ast::Expression::Star => {
-                            for (_table, row) in &ctx {
+                            for (_table, _alias, row) in &ctx {
                                 row_values.extend(row.values.clone());
                             }
                         }
@@ -445,18 +461,22 @@ impl Executor {
         &self,
         stmt: SelectStmt,
         matched_rows: Vec<JoinedContext<'_>>,
-        outer_contexts: &[(&Table, &Row)],
+        outer_contexts: &[(&Table, Option<&str>, &Row)],
         db_state: &DatabaseState,
         tx_id: Option<&str>,
     ) -> SqlResult<QueryResult> {
-        let base_table = db_state.get_table(&stmt.table).unwrap();
+        let base_table = if stmt.table.starts_with("information_schema.") {
+            return Err(SqlError::Runtime("GROUP BY with information_schema is not yet supported".to_string()));
+        } else {
+            db_state.get_table(&stmt.table).unwrap()
+        };
 
         let mut result_rows = Vec::new();
         if stmt.group_by.is_empty() {
             // Global aggregation
-            let eval_contexts: Vec<Vec<(&Table, &Row)>> = matched_rows
+            let eval_contexts: Vec<Vec<(&Table, Option<&str>, &Row)>> = matched_rows
                 .iter()
-                .map(|ctx: &JoinedContext<'_>| ctx.iter().map(|(t, r)| (*t, r)).collect())
+                .map(|ctx: &JoinedContext<'_>| ctx.iter().map(|(t, a, r)| (*t, a.as_deref(), r)).collect())
                 .collect();
 
             let mut row_values = Vec::new();
@@ -501,7 +521,7 @@ impl Executor {
             let mut groups: std::collections::HashMap<Vec<Value>, Vec<JoinedContext<'_>>> =
                 std::collections::HashMap::new();
             for ctx in matched_rows {
-                let eval_ctx: Vec<(&Table, &Row)> = ctx.iter().map(|(t, r)| (*t, r)).collect();
+                let eval_ctx: Vec<(&Table, Option<&str>, &Row)> = ctx.iter().map(|(t, a, r)| (*t, a.as_deref(), r)).collect();
                 let mut group_key = Vec::new();
                 for gb_expr in &stmt.group_by {
                     group_key.push(evaluate_expression_joined(
@@ -516,9 +536,9 @@ impl Executor {
             }
 
             for (_key, group_owned_contexts) in groups {
-                let group_eval_contexts: Vec<Vec<(&Table, &Row)>> = group_owned_contexts
+                let group_eval_contexts: Vec<Vec<(&Table, Option<&str>, &Row)>> = group_owned_contexts
                     .iter()
-                    .map(|ctx: &JoinedContext<'_>| ctx.iter().map(|(t, r)| (*t, r)).collect())
+                    .map(|ctx: &JoinedContext<'_>| ctx.iter().map(|(t, a, r)| (*t, a.as_deref(), r)).collect())
                     .collect();
 
                 let include_group = if let Some(ref having_cond) = stmt.having {
@@ -581,8 +601,8 @@ impl Executor {
     async fn evaluate_having_joined(
         &self,
         cond: &ast::Condition,
-        contexts: &[Vec<(&Table, &Row)>],
-        outer_contexts: &[(&Table, &Row)],
+        contexts: &[Vec<(&Table, Option<&str>, &Row)>],
+        outer_contexts: &[(&Table, Option<&str>, &Row)],
         db_state: &DatabaseState,
     ) -> SqlResult<bool> {
         match cond {
@@ -673,8 +693,8 @@ impl Executor {
     async fn evaluate_having_expression_joined(
         &self,
         expr: &ast::Expression,
-        contexts: &[Vec<(&Table, &Row)>],
-        outer_contexts: &[(&Table, &Row)],
+        contexts: &[Vec<(&Table, Option<&str>, &Row)>],
+        outer_contexts: &[(&Table, Option<&str>, &Row)],
         db_state: &DatabaseState,
     ) -> SqlResult<Value> {
         match expr {
@@ -725,8 +745,8 @@ impl Executor {
     fn eval_aggregate_joined(
         &self,
         fc: &ast::FunctionCall,
-        contexts: &[Vec<(&Table, &Row)>],
-        outer_contexts: &[(&Table, &Row)],
+        contexts: &[Vec<(&Table, Option<&str>, &Row)>],
+        outer_contexts: &[(&Table, Option<&str>, &Row)],
         db_state: &DatabaseState,
     ) -> SqlResult<Value> {
         match fc.name {

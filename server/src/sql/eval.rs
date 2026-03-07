@@ -9,7 +9,7 @@ pub trait Evaluator: Send + Sync {
     fn exec_select_internal<'a>(
         &'a self,
         stmt: super::ast::SelectStmt,
-        outer_contexts: &'a [(&'a Table, &'a Row)],
+        outer_contexts: &'a [(&'a Table, Option<&'a str>, &'a Row)],
         db_state: &'a DatabaseState,
     ) -> BoxFuture<'a, SqlResult<super::executor::QueryResult>>;
 }
@@ -22,7 +22,7 @@ impl Evaluator for RecoveryEvaluator {
     fn exec_select_internal<'a>(
         &'a self,
         _stmt: super::ast::SelectStmt,
-        _outer_contexts: &'a [(&'a Table, &'a Row)],
+        _outer_contexts: &'a [(&'a Table, Option<&'a str>, &'a Row)],
         _db_state: &'a DatabaseState,
     ) -> BoxFuture<'a, SqlResult<super::executor::QueryResult>> {
         async {
@@ -39,17 +39,18 @@ pub fn evaluate_condition(
     executor: &dyn Evaluator,
     cond: &Condition,
     table: &Table,
+    table_alias: Option<&str>,
     row: &Row,
     db_state: &DatabaseState,
 ) -> SqlResult<bool> {
-    evaluate_condition_joined(executor, cond, &[(table, row)], &[], db_state)
+    evaluate_condition_joined(executor, cond, &[(table, table_alias, row)], &[], db_state)
 }
 
 pub fn evaluate_condition_joined(
     executor: &dyn Evaluator,
     cond: &Condition,
-    contexts: &[(&Table, &Row)],
-    outer_contexts: &[(&Table, &Row)],
+    contexts: &[(&Table, Option<&str>, &Row)],
+    outer_contexts: &[(&Table, Option<&str>, &Row)],
     db_state: &DatabaseState,
 ) -> SqlResult<bool> {
     match cond {
@@ -99,8 +100,6 @@ pub fn evaluate_condition_joined(
             let mut combined_outer = outer_contexts.to_vec();
             combined_outer.extend_from_slice(contexts);
 
-            // We need a hack here because of block_on and lifetimes
-            // In a real system, we'd use async all the way up.
             let result = futures::executor::block_on(executor.exec_select_internal(
                 (**subquery).clone(),
                 &combined_outer,
@@ -141,17 +140,18 @@ pub fn evaluate_expression(
     executor: &dyn Evaluator,
     expr: &Expression,
     table: &Table,
+    table_alias: Option<&str>,
     row: &Row,
     db_state: &DatabaseState,
 ) -> SqlResult<Value> {
-    evaluate_expression_joined(executor, expr, &[(table, row)], &[], db_state)
+    evaluate_expression_joined(executor, expr, &[(table, table_alias, row)], &[], db_state)
 }
 
 pub fn evaluate_expression_joined(
     executor: &dyn Evaluator,
     expr: &Expression,
-    contexts: &[(&Table, &Row)],
-    outer_contexts: &[(&Table, &Row)],
+    contexts: &[(&Table, Option<&str>, &Row)],
+    outer_contexts: &[(&Table, Option<&str>, &Row)],
     db_state: &DatabaseState,
 ) -> SqlResult<Value> {
     match expr {
@@ -271,12 +271,18 @@ pub fn evaluate_expression_joined(
     }
 }
 
-pub fn resolve_column(name: &str, contexts: &[(&Table, &Row)]) -> SqlResult<Value> {
+pub fn resolve_column(name: &str, contexts: &[(&Table, Option<&str>, &Row)]) -> SqlResult<Value> {
     if name.contains('.') {
         let parts: Vec<&str> = name.split('.').collect();
-        // Case 1: table.column[.json_path]
-        for (table, row) in contexts {
-            if table.name == parts[0] && let Some(idx) = table.column_index(parts[1]) {
+        // Case 1: table_or_alias.column[.json_path]
+        for (table, alias, row) in contexts {
+            // Rule: If alias exists, original name is hidden.
+            let matches_table = match alias {
+                Some(a) => *a == parts[0],
+                None => table.name == parts[0],
+            };
+            
+            if matches_table && let Some(idx) = table.column_index(parts[1]) {
                 let mut current_val = row.values.get(idx).cloned().ok_or_else(|| {
                     SqlError::Runtime(format!("Value not found for column index: {}", idx))
                 })?;
@@ -299,7 +305,7 @@ pub fn resolve_column(name: &str, contexts: &[(&Table, &Row)]) -> SqlResult<Valu
         }
 
         // Case 2: column.json_path (no table prefix)
-        for (table, row) in contexts {
+        for (table, _alias, row) in contexts {
             if let Some(idx) = table.column_index(parts[0]) {
                 let mut current_val = row.values.get(idx).cloned().ok_or_else(|| {
                     SqlError::Runtime(format!("Value not found for column index: {}", idx))
@@ -322,7 +328,7 @@ pub fn resolve_column(name: &str, contexts: &[(&Table, &Row)]) -> SqlResult<Valu
         }
     } else {
         // Simple column
-        for (table, row) in contexts {
+        for (table, _alias, row) in contexts {
             if let Some(idx) = table.column_index(name) {
                 return row.values.get(idx).cloned().ok_or_else(|| {
                     SqlError::Runtime(format!("Value not found for column index: {}", idx))

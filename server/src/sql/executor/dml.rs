@@ -11,13 +11,37 @@ impl Executor {
         stmt: InsertStmt,
         tx_id: Option<&str>,
     ) -> SqlResult<QueryResult> {
+        let (table_name, values) = (stmt.table.clone(), stmt.values.clone());
+
+        // We need to cast values to column types
+        let casted_values = {
+            let db = self.db.read().await;
+            let table = db
+                .get_table(&table_name)
+                .ok_or_else(|| SqlError::TableNotFound(table_name.clone()))?;
+            if values.len() != table.columns.len() {
+                return Err(SqlError::Runtime(format!(
+                    "Expected {} values, got {}",
+                    table.columns.len(),
+                    values.len()
+                )));
+            }
+            let mut res = Vec::new();
+            for (val, col) in values.into_iter().zip(&table.columns) {
+                res.push(val.cast(&col.data_type).map_err(|e| {
+                    SqlError::Runtime(format!("Type error for column {}: {}", col.name, e))
+                })?);
+            }
+            res
+        };
+
         // Log to WAL first
         {
             let db = self.db.read().await;
             db.log_operation(&WalRecord::Insert {
                 tx_id: tx_id.map(|s| s.to_string()),
-                table: stmt.table.clone(),
-                values: stmt.values.clone(),
+                table: table_name.clone(),
+                values: casted_values.clone(),
             })
             .map_err(|e| SqlError::Storage(e.to_string()))?;
         }
@@ -25,9 +49,9 @@ impl Executor {
         self.mutate_state(tx_id, |state| {
             let db_state = state.clone();
             state
-                .get_table_mut(&stmt.table)
-                .ok_or_else(|| SqlError::TableNotFound(stmt.table.clone()))?
-                .insert(self, stmt.values, &db_state)
+                .get_table_mut(&table_name)
+                .ok_or_else(|| SqlError::TableNotFound(table_name.clone()))?
+                .insert(self, casted_values, &db_state)
                 .map_err(|e| SqlError::Storage(e.to_string()))?;
             Ok(())
         })
@@ -64,7 +88,7 @@ impl Executor {
                     .ok_or_else(|| SqlError::TableNotFound(stmt.table.clone()))?;
                 for row in &table.rows {
                     let matches = if let Some(ref where_clause) = stmt.where_clause {
-                        evaluate_condition(self, where_clause, table, row, &db_state_eval)?
+                        evaluate_condition(self, where_clause, table, None, row, &db_state_eval)?
                     } else {
                         true
                     };
@@ -75,8 +99,12 @@ impl Executor {
                             let col_idx = table
                                 .column_index(col_name)
                                 .ok_or_else(|| SqlError::ColumnNotFound(col_name.clone()))?;
-                            new_values[col_idx] =
-                                evaluate_expression(self, expr, table, row, &db_state_eval)?;
+                            let val = evaluate_expression(self, expr, table, None, row, &db_state_eval)?;
+                            // Cast to column type
+                            let casted_val = val.cast(&table.columns[col_idx].data_type).map_err(|e| {
+                                SqlError::Runtime(format!("Type error for column {}: {}", col_name, e))
+                            })?;
+                            new_values[col_idx] = casted_val;
                         }
                         updated_rows.push((row.id.clone(), new_values));
                         count += 1;
@@ -123,7 +151,7 @@ impl Executor {
                     .ok_or_else(|| SqlError::TableNotFound(stmt.table.clone()))?;
                 for row in &table.rows {
                     let matches = if let Some(ref where_clause) = stmt.where_clause {
-                        evaluate_condition(self, where_clause, table, row, &db_state_eval)?
+                        evaluate_condition(self, where_clause, table, None, row, &db_state_eval)?
                     } else {
                         true
                     };
@@ -134,8 +162,12 @@ impl Executor {
                             let col_idx = table
                                 .column_index(col_name)
                                 .ok_or_else(|| SqlError::ColumnNotFound(col_name.clone()))?;
-                            new_values[col_idx] =
-                                evaluate_expression(self, expr, table, row, &db_state_eval)?;
+                            let val = evaluate_expression(self, expr, table, None, row, &db_state_eval)?;
+                            // Cast to column type
+                            let casted_val = val.cast(&table.columns[col_idx].data_type).map_err(|e| {
+                                SqlError::Runtime(format!("Type error for column {}: {}", col_name, e))
+                            })?;
+                            new_values[col_idx] = casted_val;
                         }
                         updated_rows.push((row.id.clone(), new_values));
                         count += 1;
@@ -190,7 +222,7 @@ impl Executor {
                     .ok_or_else(|| SqlError::TableNotFound(stmt.table.clone()))?;
                 for row in &table.rows {
                     let matches = if let Some(ref where_clause) = stmt.where_clause {
-                        evaluate_condition(self, where_clause, table, row, &db_state_eval)?
+                        evaluate_condition(self, where_clause, table, None, row, &db_state_eval)?
                     } else {
                         true
                     };
@@ -240,7 +272,7 @@ impl Executor {
                     .ok_or_else(|| SqlError::TableNotFound(stmt.table.clone()))?;
                 for row in &table.rows {
                     let matches = if let Some(ref where_clause) = stmt.where_clause {
-                        evaluate_condition(self, where_clause, table, row, &db_state_eval)?
+                        evaluate_condition(self, where_clause, table, None, row, &db_state_eval)?
                     } else {
                         true
                     };

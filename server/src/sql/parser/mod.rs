@@ -14,8 +14,9 @@ use pest_derive::Parser;
 pub struct SqlParser;
 
 pub fn parse(sql: &str) -> SqlResult<SqlStmt> {
-    let mut pairs = SqlParser::parse(Rule::statement, sql)
-        .map_err(|e| SqlError::Parse(format!("Pest error: {}", e)))?;
+    let mut pairs = SqlParser::parse(Rule::statement, sql).map_err(|e| {
+        SqlError::Parse(format!("Pest error: {}", e))
+    })?;
 
     let pair = pairs
         .next()
@@ -37,28 +38,27 @@ pub fn parse(sql: &str) -> SqlResult<SqlStmt> {
         Rule::update_stmt => dml::parse_update(inner),
         Rule::delete_stmt => dml::parse_delete(inner),
         Rule::explain_stmt => {
-            let select_pair = inner.into_inner().next().unwrap();
+            let mut inner_pairs = inner.into_inner();
+            let _explain_kw = inner_pairs.next().unwrap();
+            let select_pair = inner_pairs.next().ok_or_else(|| SqlError::Parse("Missing SELECT after EXPLAIN".to_string()))?;
             let select_stmt = select::parse_select(select_pair)?;
             if let SqlStmt::Select(s) = select_stmt {
                 Ok(SqlStmt::Explain(s))
             } else {
-                Err(SqlError::Parse(
-                    "EXPLAIN must be followed by SELECT".to_string(),
-                ))
+                Err(SqlError::Parse("EXPLAIN must be followed by SELECT".to_string()))
             }
         }
         Rule::search_stmt => {
             let mut inner_pairs = inner.into_inner();
-            let query_literal = expr::parse_literal(inner_pairs.next().unwrap())?;
+            let _search_kw = inner_pairs.next().unwrap();
+            let table_pair = inner_pairs.next().ok_or_else(|| SqlError::Parse("Missing table name in SEARCH".to_string()))?;
+            let table = utils::expect_identifier(table_pair.into_inner().next(), "table name")?;
+            let query_literal = expr::parse_literal(inner_pairs.next().ok_or_else(|| SqlError::Parse("Missing query in SEARCH".to_string()))?)?;
             let query = query_literal
                 .as_text()
                 .ok_or_else(|| SqlError::Parse("SEARCH query must be a string".to_string()))?
                 .to_string();
-            let table = utils::expect_identifier(inner_pairs.next(), "table name")?;
-            Ok(SqlStmt::Search(crate::sql::ast::SearchStmt {
-                table,
-                query,
-            }))
+            Ok(SqlStmt::Search(crate::sql::ast::SearchStmt { table, query }))
         }
         _ => Err(SqlError::Parse(format!(
             "Unsupported statement rule: {:?}",

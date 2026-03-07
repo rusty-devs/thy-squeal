@@ -15,21 +15,21 @@ pub fn parse_expression(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expressi
     let mut left = parse_term(first)?;
 
     while let Some(op_pair) = inner.next() {
-        let op = match op_pair.as_str() {
+        let op_str = op_pair.as_str().trim();
+        let op = match op_str {
             "+" => BinaryOp::Add,
             "-" => BinaryOp::Sub,
             _ => {
                 return Err(SqlError::Parse(format!(
-                    "Unsupported binary operator: {}",
-                    op_pair.as_str()
+                    "Unsupported binary operator in expression: '{}'",
+                    op_str
                 )));
             }
         };
-        let right = parse_term(
-            inner
-                .next()
-                .ok_or_else(|| SqlError::Parse("Missing right term".to_string()))?,
-        )?;
+        let right_pair = inner
+            .next()
+            .ok_or_else(|| SqlError::Parse("Missing right term".to_string()))?;
+        let right = parse_term(right_pair)?;
         left = Expression::BinaryOp(Box::new(left), op, Box::new(right));
     }
 
@@ -45,21 +45,25 @@ pub fn parse_term(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expression> {
     let mut left = parse_factor(first)?;
 
     while let Some(op_pair) = inner.next() {
-        let op = match op_pair.as_str() {
+        let op_str = op_pair.as_str().trim();
+        let op = match op_str {
             "*" => BinaryOp::Mul,
             "/" => BinaryOp::Div,
+            "%" => {
+                // Not in ast::BinaryOp yet, let's skip for now or treat as something else
+                return Err(SqlError::Parse("Modulo operator not yet supported".to_string()));
+            }
             _ => {
                 return Err(SqlError::Parse(format!(
-                    "Unsupported binary operator: {}",
-                    op_pair.as_str()
+                    "Unsupported binary operator in term: '{}'",
+                    op_str
                 )));
             }
         };
-        let right = parse_factor(
-            inner
-                .next()
-                .ok_or_else(|| SqlError::Parse("Missing right factor".to_string()))?,
-        )?;
+        let right_pair = inner
+            .next()
+            .ok_or_else(|| SqlError::Parse("Missing right factor".to_string()))?;
+        let right = parse_factor(right_pair)?;
         left = Expression::BinaryOp(Box::new(left), op, Box::new(right));
     }
 
@@ -67,8 +71,8 @@ pub fn parse_term(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expression> {
 }
 
 pub fn parse_factor(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expression> {
-    let first = pair
-        .into_inner()
+    let mut inner = pair.clone().into_inner();
+    let first = inner
         .next()
         .ok_or_else(|| SqlError::Parse("Empty factor".to_string()))?;
 
@@ -84,7 +88,7 @@ pub fn parse_factor(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expression> 
                 .collect();
             Ok(Expression::Column(parts.join(".")))
         }
-        Rule::select_stmt => {
+        Rule::select_stmt | Rule::select_stmt_inner => {
             let stmt = super::select::parse_select(first)?;
             if let super::super::ast::SqlStmt::Select(s) = stmt {
                 Ok(Expression::Subquery(Box::new(s)))
@@ -95,13 +99,27 @@ pub fn parse_factor(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expression> 
             }
         }
         Rule::expression => parse_expression(first),
-        Rule::KW_NOT => Err(SqlError::Parse(
-            "NOT in expression factor not yet implemented".to_string(),
-        )),
-        _ => Err(SqlError::Parse(format!(
-            "Unsupported factor rule: {:?}",
-            first.as_rule()
-        ))),
+        Rule::KW_NOT => {
+            let next_factor = inner.next().ok_or_else(|| SqlError::Parse("Missing factor after NOT".to_string()))?;
+            let _ = parse_factor(next_factor)?;
+            Err(SqlError::Parse("NOT in expression factor not yet implemented".to_string()))
+        }
+        _ => {
+            // Check if it's a parenthesized select
+            if first.as_str().starts_with('(')
+                && let Some(inner_pair) = first.clone().into_inner().find(|p| p.as_rule() == Rule::select_stmt || p.as_rule() == Rule::select_stmt_inner)
+            {
+                let stmt = super::select::parse_select(inner_pair)?;
+                if let super::super::ast::SqlStmt::Select(s) = stmt {
+                    return Ok(Expression::Subquery(Box::new(s)));
+                }
+            }
+            
+            Err(SqlError::Parse(format!(
+                "Unsupported factor rule: {:?}",
+                first.as_rule()
+            )))
+        }
     }
 }
 
@@ -153,33 +171,35 @@ pub fn parse_condition(pair: pest::iterators::Pair<Rule>) -> SqlResult<Condition
                             )));
                         }
                     };
-                    let right = parse_expression(
-                        inner
-                            .find(|p| p.as_rule() == Rule::expression)
-                            .ok_or_else(|| {
-                                SqlError::Parse("Missing right expression".to_string())
-                            })?,
-                    )?;
+                    let right_pair = inner
+                        .next()
+                        .ok_or_else(|| {
+                            SqlError::Parse("Missing right side of comparison".to_string())
+                        })?;
+                    
+                    let right = if right_pair.as_rule() == Rule::expression {
+                        parse_expression(right_pair)?
+                    } else {
+                        // Handle (select_stmt)
+                        let subquery = find_select_stmt(right_pair)?;
+                        Expression::Subquery(Box::new(subquery))
+                    };
+                    
                     Ok(Condition::Comparison(left, op, right))
                 }
                 Rule::KW_IS => {
-                    let is_not;
-                    if let Some(next) = inner.next() {
-                        if next.as_rule() == Rule::KW_NOT {
-                            is_not = true;
-                            let _null = inner.next().ok_or_else(|| {
-                                SqlError::Parse("Expected NULL after IS NOT".to_string())
-                            })?;
-                        } else if next.as_rule() == Rule::KW_NULL {
-                            is_not = false;
-                        } else {
-                            return Err(SqlError::Parse(format!(
-                                "Expected NULL or NOT NULL after IS, got {:?}",
-                                next.as_rule()
-                            )));
-                        }
+                    let mut is_not = false;
+                    let next = inner.next().ok_or_else(|| SqlError::Parse("Missing token after IS".to_string()))?;
+                    
+                    let final_token = if next.as_rule() == Rule::KW_NOT {
+                        is_not = true;
+                        inner.next().ok_or_else(|| SqlError::Parse("Expected NULL after IS NOT".to_string()))?
                     } else {
-                        return Err(SqlError::Parse("Missing token after IS".to_string()));
+                        next
+                    };
+
+                    if final_token.as_rule() != Rule::KW_NULL {
+                        return Err(SqlError::Parse(format!("Expected NULL after IS, got {:?}", final_token.as_rule())));
                     }
 
                     if is_not {
@@ -230,7 +250,7 @@ pub fn parse_condition(pair: pest::iterators::Pair<Rule>) -> SqlResult<Condition
 }
 
 fn find_select_stmt(pair: pest::iterators::Pair<Rule>) -> SqlResult<super::super::ast::SelectStmt> {
-    if pair.as_rule() == Rule::select_stmt {
+    if pair.as_rule() == Rule::select_stmt || pair.as_rule() == Rule::select_stmt_inner {
         let stmt = super::select::parse_select(pair.clone())?;
         if let super::super::ast::SqlStmt::Select(s) = stmt {
             return Ok(s);
@@ -255,22 +275,22 @@ pub fn parse_literal(pair: pest::iterators::Pair<Rule>) -> SqlResult<Value> {
             if s.to_uppercase() == "NULL" {
                 return Ok(Value::Null);
             }
-            // If atomic literal has no children, its string value is the value
-            if pair.as_rule() == Rule::string_literal {
-                return Ok(Value::Text(s.trim_matches('\'').to_string()));
+            if s.to_lowercase() == "true" { return Ok(Value::Bool(true)); }
+            if s.to_lowercase() == "false" { return Ok(Value::Bool(false)); }
+            
+            if s.starts_with('\'') && s.ends_with('\'') {
+                return Ok(Value::Text(s[1..s.len()-1].to_string()));
             }
-            if pair.as_rule() == Rule::number_literal {
-                return if s.contains('.') {
-                    s.parse::<f64>()
-                        .map(Value::Float)
-                        .map_err(|_| SqlError::Parse(format!("Invalid number: {}", s)))
-                } else {
-                    s.parse::<i64>()
-                        .map(Value::Int)
-                        .map_err(|_| SqlError::Parse(format!("Invalid integer: {}", s)))
-                };
+            
+            // Try number
+            if let Ok(i) = s.parse::<i64>() {
+                return Ok(Value::Int(i));
             }
-            return Err(SqlError::Parse(format!("Empty literal: {}", s)));
+            if let Ok(f) = s.parse::<f64>() {
+                return Ok(Value::Float(f));
+            }
+            
+            return Err(SqlError::Parse(format!("Could not parse literal: {}", s)));
         }
     };
 
@@ -315,10 +335,14 @@ pub fn parse_aggregate(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expressio
         Rule::star => args.push(Expression::Star),
         Rule::expression => args.push(parse_expression(arg_pair)?),
         _ => {
-            return Err(SqlError::Parse(format!(
-                "Unexpected aggregate argument: {:?}",
-                arg_pair.as_rule()
-            )));
+            if arg_pair.as_str() == "*" {
+                args.push(Expression::Star);
+            } else {
+                return Err(SqlError::Parse(format!(
+                    "Unexpected aggregate argument: {:?}",
+                    arg_pair.as_rule()
+                )));
+            }
         }
     }
 

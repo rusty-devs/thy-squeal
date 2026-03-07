@@ -8,6 +8,7 @@ Pest-based SQL parser for thy-squeal, supporting a MySQL-compatible dialect.
 - **Grammar** (`server/src/sql/sql.pest`): ✅ Integrated (SELECT, INSERT, UPDATE, DELETE, CREATE TABLE, DROP TABLE, CREATE INDEX, WHERE, expressions, subqueries, etc.)
 - **Executor**: Uses **Modular Pest-based parser** to produce AST. Supported: CREATE TABLE, DROP TABLE, CREATE INDEX, SELECT, INSERT, UPDATE, DELETE, WHERE, ORDER BY, LIMIT, Aggregations, GROUP BY, HAVING, DISTINCT, INNER/LEFT JOIN, Subqueries, and ACID Transactions.
 - **Explain Plan**: ✅ Supported for `SELECT` statements.
+- **Information Schema**: ✅ Query metadata via virtual tables.
 
 ## Parser Architecture
 
@@ -50,6 +51,24 @@ The parser is decomposed into submodules for maintainability:
 - `BEGIN` / `START TRANSACTION`
 - `COMMIT`
 - `ROLLBACK`
+
+### System Metadata
+thy-squeal supports the standard `information_schema` for discovering database metadata.
+
+**Query Tables:**
+```sql
+SELECT * FROM information_schema.tables;
+```
+
+**Query Columns:**
+```sql
+SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'users';
+```
+
+**Query Indexes:**
+```sql
+SELECT index_name, is_unique FROM information_schema.indexes WHERE table_name = 'orders';
+```
 
 ## Advanced Indexing
 

@@ -64,6 +64,7 @@ thy-squeal/                          # Cargo workspace
 │       │   ├── table.rs             # Table, Column, Row
 │       │   ├── value.rs             # Value enum & impls
 │       │   ├── types.rs             # DataType enum
+│       │   ├── info_schema.rs       # Metadata virtual tables
 │       │   └── error.rs             # StorageError
 │       ├── sql/                     # SQL engine
 │       │   ├── mod.rs               # SQL module entry
@@ -97,8 +98,10 @@ thy-squeal/                          # Cargo workspace
 - [x] Full-Text Search integration (Tantivy)
 - [x] Advanced Indexing (B-Tree, Hash, Composite, JSON Path, Functional, Partial)
 - [x] ACID Transactions (BEGIN, COMMIT, ROLLBACK)
+- [x] Write-Ahead Logging (WAL) for durability
+- [x] Information Schema (metadata discoverability)
 - [x] Structured Error Handling (SqlError)
-- [x] Integration testing suite
+- [x] Integration testing suite (28+ tests)
 - [x] REPL SQL execution (wired via HTTP)
 - [x] Persistence via `sled` snapshots
 
@@ -134,10 +137,10 @@ thy-squeal/                          # Cargo workspace
 - [x] Advanced Indexing (Hash, Composite, JSON, Functional, Partial)
 
 ### Phase 4: ACID & Protocol (v0.4)
-- [x] **Transactions**: BEGIN, COMMIT, ROLLBACK (Completed)
-- [ ] **Write-Ahead Logging (WAL)**: Durability beyond snapshots
-- [ ] **Information Schema**: Metadata discoverability
-- [x] **Explain Plan**: Query execution transparency (Completed)
+- [x] **Transactions**: BEGIN, COMMIT, ROLLBACK
+- [x] **Write-Ahead Logging (WAL)**: Durability beyond snapshots
+- [x] **Information Schema**: Metadata discoverability
+- [x] **Explain Plan**: Query execution transparency
 - [ ] **SQL Dump/Restore**: Export/Import SQL scripts
 
 ### Phase 5: Ecosystem & Client (v0.5)

@@ -4,22 +4,16 @@ use super::super::parser::Rule;
 use super::utils::expect_identifier;
 
 pub fn parse_select(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
-    let mut inner = pair.into_inner();
+    let inner = if pair.as_rule() == Rule::select_stmt {
+        pair.into_inner().next().unwrap().into_inner()
+    } else {
+        pair.into_inner()
+    };
 
-    let distinct = inner.clone().any(|p| p.as_rule() == Rule::distinct);
-
-    let table_name = inner
-        .find(|p| p.as_rule() == Rule::table_name)
-        .map(|p| p.as_str().trim().to_string())
-        .ok_or_else(|| SqlError::Parse("Missing table name in SELECT".to_string()))?;
-
-    let columns = parse_select_columns(
-        inner
-            .clone()
-            .find(|p| p.as_rule() == Rule::select_columns)
-            .ok_or_else(|| SqlError::Parse("Missing columns in SELECT".to_string()))?,
-    )?;
-
+    let mut distinct = false;
+    let mut columns = Vec::new();
+    let mut table_name = String::new();
+    let mut table_alias = None;
     let mut joins = Vec::new();
     let mut where_clause = None;
     let mut order_by = Vec::new();
@@ -29,6 +23,18 @@ pub fn parse_select(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
 
     for p in inner {
         match p.as_rule() {
+            Rule::distinct => distinct = true,
+            Rule::select_columns => {
+                columns = parse_select_columns(p)?;
+            }
+            Rule::table_name_with_alias => {
+                let mut table_inner = p.into_inner();
+                let table_pair = table_inner.next().ok_or_else(|| SqlError::Parse("Missing table name".to_string()))?;
+                table_name = table_pair.as_str().trim().to_string();
+                if let Some(alias_pair) = table_inner.next() {
+                    table_alias = Some(expect_identifier(alias_pair.into_inner().next(), "table alias")?);
+                }
+            }
             Rule::join_clause => {
                 joins.push(parse_join(p)?);
             }
@@ -51,8 +57,16 @@ pub fn parse_select(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
         }
     }
 
+    if table_name.is_empty() {
+        return Err(SqlError::Parse("Missing table name in SELECT".to_string()));
+    }
+    if columns.is_empty() {
+        return Err(SqlError::Parse("Missing columns in SELECT".to_string()));
+    }
+
     Ok(SqlStmt::Select(SelectStmt {
         table: table_name,
+        table_alias,
         columns,
         joins,
         where_clause,
@@ -68,38 +82,42 @@ pub fn parse_select_columns(pair: pest::iterators::Pair<Rule>) -> SqlResult<Vec<
     let mut columns = Vec::new();
     let inner = pair.into_inner();
     
-    // Check if it's a "*"
-    let mut inner_clone = inner.clone();
-    if let Some(first) = inner_clone.next()
-        && first.as_str() == "*"
-    {
-        columns.push(SelectColumn {
-            expr: crate::sql::ast::Expression::Star,
-            alias: None,
-        });
-        return Ok(columns);
-    }
-
-    // It's a column_list
     for p in inner {
-        if p.as_rule() == Rule::column_list {
-            for col_expr_pair in p.into_inner() {
-                if col_expr_pair.as_rule() == Rule::column_expr {
-                    let mut col_inner = col_expr_pair.into_inner();
-                    let expr = super::expr::parse_expression(
-                        col_inner
-                            .next()
-                            .ok_or_else(|| SqlError::Parse("Missing expression in column".to_string()))?,
-                    )?;
-                    let alias = col_inner
-                        .find(|p| p.as_rule() == Rule::alias)
-                        .and_then(|p| p.into_inner().find(|p| p.as_rule() == Rule::identifier))
-                        .map(|p| p.as_str().trim().to_string());
-                    columns.push(SelectColumn { expr, alias });
+        match p.as_rule() {
+            Rule::star => {
+                columns.push(SelectColumn {
+                    expr: crate::sql::ast::Expression::Star,
+                    alias: None,
+                });
+            }
+            Rule::column_list => {
+                for col_expr_pair in p.into_inner() {
+                    if col_expr_pair.as_rule() == Rule::column_expr {
+                        let mut col_inner = col_expr_pair.into_inner();
+                        let expr = super::expr::parse_expression(
+                            col_inner
+                                .next()
+                                .ok_or_else(|| SqlError::Parse("Missing expression in column".to_string()))?,
+                        )?;
+                        let alias = col_inner
+                            .find(|p| p.as_rule() == Rule::alias)
+                            .and_then(|p| p.into_inner().find(|p| p.as_rule() == Rule::identifier))
+                            .map(|p| p.as_str().trim().to_string());
+                        columns.push(SelectColumn { expr, alias });
+                    }
+                }
+            }
+            _ => {
+                if p.as_str() == "*" {
+                    columns.push(SelectColumn {
+                        expr: crate::sql::ast::Expression::Star,
+                        alias: None,
+                    });
                 }
             }
         }
     }
+    
     Ok(columns)
 }
 
@@ -110,17 +128,28 @@ fn parse_join(pair: pest::iterators::Pair<Rule>) -> SqlResult<Join> {
     
     let next = inner.next().ok_or_else(|| SqlError::Parse("Empty JOIN clause".to_string()))?;
     
-    if next.as_rule() == Rule::KW_INNER {
+    let mut table_with_alias_pair = next;
+    
+    if table_with_alias_pair.as_rule() == Rule::KW_INNER {
         join_type = JoinType::Inner;
         inner.next(); // skip KW_JOIN
-    } else if next.as_rule() == Rule::KW_LEFT {
+        table_with_alias_pair = inner.next().ok_or_else(|| SqlError::Parse("Missing table name in JOIN".to_string()))?;
+    } else if table_with_alias_pair.as_rule() == Rule::KW_LEFT {
         join_type = JoinType::Left;
         inner.next(); // skip KW_JOIN
-    } else if next.as_rule() == Rule::KW_JOIN {
-        join_type = JoinType::Inner;
+        table_with_alias_pair = inner.next().ok_or_else(|| SqlError::Parse("Missing table name in JOIN".to_string()))?;
+    } else if table_with_alias_pair.as_rule() == Rule::KW_JOIN {
+        table_with_alias_pair = inner.next().ok_or_else(|| SqlError::Parse("Missing table name in JOIN".to_string()))?;
     }
 
-    let table = expect_identifier(inner.find(|p| p.as_rule() == Rule::table_name), "join table")?;
+    let mut table_inner = table_with_alias_pair.into_inner();
+    let table_pair = table_inner.next().ok_or_else(|| SqlError::Parse("Missing table name in JOIN".to_string()))?;
+    let table = table_pair.as_str().trim().to_string();
+    let mut table_alias = None;
+    if let Some(alias_pair) = table_inner.next() {
+        table_alias = Some(expect_identifier(alias_pair.into_inner().next(), "table alias")?);
+    }
+
     let on = super::expr::parse_condition(
         inner
             .find(|p| p.as_rule() == Rule::condition)
@@ -129,6 +158,7 @@ fn parse_join(pair: pest::iterators::Pair<Rule>) -> SqlResult<Join> {
 
     Ok(Join {
         table,
+        table_alias,
         on,
         join_type,
     })

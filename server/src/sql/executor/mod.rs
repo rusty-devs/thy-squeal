@@ -33,26 +33,16 @@ impl Executor {
         }
     }
 
-    pub async fn execute(
-        &self,
-        sql: &str,
-        transaction_id: Option<String>,
-    ) -> SqlResult<QueryResult> {
+    pub async fn execute(&self, sql: &str, transaction_id: Option<String>) -> SqlResult<QueryResult> {
         let stmt = parse(sql)?;
 
         let mut res = match stmt {
             SqlStmt::Begin => self.exec_begin().await?,
             SqlStmt::Commit => self.exec_commit(transaction_id.as_deref()).await?,
             SqlStmt::Rollback => self.exec_rollback(transaction_id.as_deref()).await?,
-            SqlStmt::CreateTable(ct) => {
-                self.exec_create_table(ct, transaction_id.as_deref())
-                    .await?
-            }
+            SqlStmt::CreateTable(ct) => self.exec_create_table(ct, transaction_id.as_deref()).await?,
             SqlStmt::DropTable(dt) => self.exec_drop_table(dt, transaction_id.as_deref()).await?,
-            SqlStmt::CreateIndex(ci) => {
-                self.exec_create_index(ci, transaction_id.as_deref())
-                    .await?
-            }
+            SqlStmt::CreateIndex(ci) => self.exec_create_index(ci, transaction_id.as_deref()).await?,
             SqlStmt::Select(s) => {
                 if let Some(id) = transaction_id.as_deref() {
                     let state = self
@@ -106,7 +96,7 @@ impl Evaluator for Executor {
     fn exec_select_internal<'a>(
         &'a self,
         stmt: super::ast::SelectStmt,
-        outer_contexts: &'a [(&'a Table, &'a Row)],
+        outer_contexts: &'a [(&'a Table, Option<&'a str>, &'a Row)],
         db_state: &'a DatabaseState,
     ) -> BoxFuture<'a, SqlResult<QueryResult>> {
         self.exec_select_recursive(stmt, outer_contexts, db_state, None)
