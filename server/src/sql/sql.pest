@@ -1,7 +1,9 @@
 // thy-squeal SQL Grammar
 
 // Main statement
-statement = { SOI ~ (select_stmt | insert_stmt | update_stmt | delete_stmt | create_table_stmt | drop_table_stmt | create_index_stmt) ~ ";"? ~ EOI }
+statement = { SOI ~ (explain_stmt | select_stmt | insert_stmt | update_stmt | delete_stmt | create_table_stmt | drop_table_stmt | create_index_stmt) ~ ";"? ~ EOI }
+
+explain_stmt = { KW_EXPLAIN ~ select_stmt }
 
 // SELECT statement
 select_stmt = { KW_SELECT ~ distinct? ~ select_columns ~ KW_FROM ~ table_name ~ join_clause* ~ where_clause? ~ group_by_clause? ~ having_clause? ~ order_by_clause? ~ limit_clause? }
@@ -96,7 +98,7 @@ identifier = @{ !keyword ~ (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_
 table_name = { identifier }
 
 keyword = {
-    KW_SELECT | KW_FROM | KW_WHERE | KW_INSERT | KW_INTO | KW_INDEX | KW_JOIN | KW_INNER | KW_LEFT | KW_ON | KW_VALUES | KW_UPDATE | KW_SET | KW_DELETE |
+    KW_SELECT | KW_FROM | KW_WHERE | KW_INSERT | KW_INTO | KW_INDEX | KW_JOIN | KW_INNER | KW_LEFT | KW_ON | KW_VALUES | KW_UPDATE | KW_SET | KW_DELETE | KW_EXPLAIN |
     KW_CREATE | KW_TABLE | KW_DROP | KW_GROUP | KW_BY | KW_ORDER | KW_HAVING | KW_LIMIT | KW_OFFSET | KW_ASC | KW_DESC |
     KW_DISTINCT | KW_AS | KW_AND | KW_OR | KW_NOT | KW_NULL | KW_IS | KW_TRUE | KW_FALSE |
     KW_COUNT | KW_SUM | KW_AVG | KW_MIN | KW_MAX | KW_IN
@@ -117,6 +119,7 @@ KW_VALUES   = @{ ^"VALUES" ~ !id_char }
 KW_UPDATE   = @{ ^"UPDATE" ~ !id_char }
 KW_SET      = @{ ^"SET" ~ !id_char }
 KW_DELETE   = @{ ^"DELETE" ~ !id_char }
+KW_EXPLAIN  = @{ ^"EXPLAIN" ~ !id_char }
 KW_CREATE   = @{ ^"CREATE" ~ !id_char }
 KW_TABLE    = @{ ^"TABLE" ~ !id_char }
 KW_DROP     = @{ ^"DROP" ~ !id_char }

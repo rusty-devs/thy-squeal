@@ -39,6 +39,7 @@ impl Executor {
             SqlStmt::DropTable(dt) => self.exec_drop_table(dt).await,
             SqlStmt::CreateIndex(ci) => self.exec_create_index(ci).await,
             SqlStmt::Select(s) => self.exec_select_recursive(s, &[]).await,
+            SqlStmt::Explain(s) => self.exec_explain(s).await,
             SqlStmt::Insert(i) => self.exec_insert(i).await,
             SqlStmt::Update(u) => self.exec_update(u).await,
             SqlStmt::Delete(d) => self.exec_delete(d).await,

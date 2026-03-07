@@ -294,6 +294,20 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_explain() {
+        let exec = Executor::new(crate::storage::Database::new());
+        exec.execute("CREATE TABLE users (id INT, name TEXT)").await.unwrap();
+        exec.execute("CREATE INDEX idx_id ON users (id)").await.unwrap();
+
+        let r = exec.execute("EXPLAIN SELECT * FROM users WHERE id = 1").await.unwrap();
+        assert_eq!(r.columns, vec!["stage", "operation", "details"]);
+        assert!(r.rows[0][1].as_text().unwrap().contains("Index Lookup"));
+
+        let r = exec.execute("EXPLAIN SELECT * FROM users WHERE name = 'alice'").await.unwrap();
+        assert!(r.rows[0][1].as_text().unwrap().contains("Full Table Scan"));
+    }
+
+    #[tokio::test]
     async fn test_drop_table() {
         let exec = Executor::new(crate::storage::Database::new());
         exec.execute("CREATE TABLE x (id INT)").await.unwrap();

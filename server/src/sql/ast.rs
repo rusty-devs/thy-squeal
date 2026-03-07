@@ -10,6 +10,7 @@ pub enum SqlStmt {
     Insert(InsertStmt),
     Update(UpdateStmt),
     Delete(DeleteStmt),
+    Explain(SelectStmt),
 }
 
 #[derive(Debug, Clone)]

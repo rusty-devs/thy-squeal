@@ -98,6 +98,7 @@ See: [sql-parser.md](./features/sql-parser.md)
 - [x] Add DISTINCT
 - [x] Add column aliases
 - [x] Add subquery support
+- [x] Add EXPLAIN support
 
 ### Aggregations
 - [x] Add COUNT, SUM, AVG, MIN, MAX

@@ -36,6 +36,7 @@ A MySQL-compatible SQL server with dual-protocol support (SQL over TCP + HTTP JS
 - ORDER BY and LIMIT/OFFSET
 - Aliases for columns
 - Subqueries: Correlated and non-correlated (IN clause)
+- **EXPLAIN**: Query execution plan visualization
 - **Data Export/Import**: `.dump` and `.restore` commands (SQL script format)
 - **Information Schema**: Metadata querying (tables, columns, statistics)
 
@@ -91,6 +92,7 @@ thy-squeal/                          # Cargo workspace
 - [x] DISTINCT support
 - [x] INNER and LEFT JOIN support
 - [x] Subquery support (correlated and IN)
+- [x] EXPLAIN support (execution plan visualization)
 - [x] Structured Error Handling (SqlError)
 - [x] Integration testing suite
 - [x] REPL SQL execution (wired via HTTP)
@@ -125,12 +127,12 @@ thy-squeal/                          # Cargo workspace
 - [x] ORDER BY, LIMIT/OFFSET
 - [x] Subqueries (correlated and IN)
 - [ ] Multi-table JOINs (optimized)
-- [ ] Indexes (B-Tree for range scans)
+- [x] Indexes (B-Tree for range scans)
 
 ### Phase 4: Reliability & Tooling (v0.4)
 - [ ] **SQL Dump/Restore**: Export/Import SQL scripts
 - [ ] **Information Schema**: Metadata discoverability
-- [ ] **Explain Plan**: Query execution transparency
+- [x] **Explain Plan**: Query execution transparency (Completed)
 - [ ] **Write-Ahead Logging (WAL)**: Durability beyond snapshots
 
 ### Phase 5: Ecosystem & Client (v0.5)
