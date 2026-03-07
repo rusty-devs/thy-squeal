@@ -13,10 +13,10 @@ struct Cli {
     #[arg(short, long, default_value = "localhost")]
     host: String,
     
-    #[arg(short, long, default_value_t = 3306)]
+    #[arg(short, long, default_value_t = 9200)]
     port: u16,
     
-    #[arg(long)]
+    #[arg(long, default_value_t = true)]
     http: bool,
     
     #[arg(short, long)]
@@ -67,10 +67,10 @@ async fn main() -> Result<()> {
     match &cli.command {
         Some(Commands::Repl) | None => {
             info!("Starting REPL...");
-            repl::start().await?;
+            repl::start(cli.host, cli.port).await?;
         }
         Some(Commands::Query { sql }) => {
-            println!("Query: {}", sql);
+            http::execute_query(&cli.host, cli.port, sql).await?;
         }
     }
 

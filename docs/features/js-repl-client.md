@@ -122,7 +122,7 @@ try {
 # ~/.thy-squeal/config.yaml
 connection:
   default_host: "localhost"
-  default_port: 3306
+  default_port: 9200
 
 repl:
   history_size: 1000

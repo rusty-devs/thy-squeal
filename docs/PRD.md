@@ -362,7 +362,7 @@ thy-squeal/                          # Cargo workspace
 - [x] WHERE clause filtering supported
 - [x] Client `--http -e "SQL"` for one-off queries
 - [ ] TCP server (SQL protocol)
-- [ ] REPL SQL execution (REPL exists; execution from REPL not wired)
+- [x] REPL SQL execution (wired via HTTP)
 
 ---
 
@@ -400,7 +400,7 @@ thy-squeal/                          # Cargo workspace
 - [x] thy-squeal-client CLI (Clap)
 - [x] REPL with rustyline (history, .help, .quit)
 - [x] `--http -e "SQL"` execution
-- [ ] Wire REPL to execute SQL (HTTP or TCP)
+- [x] Wire REPL to execute SQL (HTTP)
 - [ ] JavaScript REPL (QuickJS)
 - [ ] Import/export
 

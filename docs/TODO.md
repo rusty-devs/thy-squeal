@@ -26,7 +26,7 @@ See [docs/features/](./features/) for detailed specifications.
 
 ### Current Status
 - Server runs on HTTP port 9200 (Axum)
-- Client REPL exists (rustyline); SQL execution in REPL not wired
+- Client REPL exists (rustyline); SQL execution in REPL wired to HTTP API
 - Config loads from `thy-squeal.yaml`
 - GET /, GET /health, POST /_query, CORS working
 
@@ -150,7 +150,7 @@ See: [js-repl-client.md](./features/js-repl-client.md)
 - [x] Integrate rustyline
 - [x] Add history (arrow keys)
 - [x] Add `.help`, `.quit` / `.exit`
-- [ ] Wire SQL input to HTTP client execution
+- [x] Wire SQL input to HTTP client execution
 - [ ] Add tab completion
 - [ ] Add `.load` command
 

@@ -52,15 +52,7 @@ Client (--http -e "SQL")  →  POST /_query  →  Executor::execute(sql)
 
 ---
 
-### 5. Wire REPL to Execute SQL (Pending)
-
-**Why**: REPL exists but prints "(Not implemented yet)" for SQL. MVP should allow interactive use.
-
-**Steps**:
-1. In `repl.rs`, when the user enters SQL (non-dot command):
-   - Call `http::execute_query(host, port, &sql)` (reuse existing HTTP client)
-2. Load `host`/`port` from `config::load_config()` or CLI args passed into REPL
-3. Pass connection params from `main.rs` into `repl::start(host, port)`
+### 5. Wire REPL to Execute SQL (Completed)
 
 **Outcome**: Interactive SQL sessions via REPL.
 
@@ -84,7 +76,7 @@ Client (--http -e "SQL")  →  POST /_query  →  Executor::execute(sql)
 - [x] Pest parser wired; executor uses AST
 - [x] WHERE works for SELECT, UPDATE, DELETE
 - [ ] ORDER BY, LIMIT work for SELECT
-- [ ] REPL executes SQL over HTTP
+- [x] REPL executes SQL over HTTP
 - [x] Unit tests for SQL operations
 - [ ] Integration tests
 - [ ] Structured errors surfaced in JSON response

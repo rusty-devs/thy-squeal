@@ -1,14 +1,18 @@
 use anyhow::Result;
 use rustyline::{Editor, history::DefaultHistory};
+use crate::http;
 
-pub async fn start() -> Result<()> {
+pub async fn start(host: String, port: u16) -> Result<()> {
     let mut rl: Editor<(), DefaultHistory> = Editor::new()?;
     
-    if rl.load_history("history.txt").is_err() {
-        println!("No previous history.");
+    // Check if we can find a history file
+    let history_path = "history.txt";
+    if rl.load_history(history_path).is_err() {
+        // Ignore error if history file doesn't exist
     }
 
     println!("thy-squeal client v{}", env!("CARGO_PKG_VERSION"));
+    println!("Connected to http://{}:{}", host, port);
     println!("Type .help for commands, .quit to exit\n");
 
     loop {
@@ -37,8 +41,10 @@ pub async fn start() -> Result<()> {
                     continue;
                 }
 
-                println!("Executing: {}", line);
-                println!("(Not implemented yet)");
+                // Execute SQL via HTTP
+                if let Err(e) = http::execute_query(&host, port, line).await {
+                    eprintln!("Error: {}", e);
+                }
             }
             Err(rustyline::error::ReadlineError::Interrupted) => {
                 println!("^C");
@@ -55,7 +61,7 @@ pub async fn start() -> Result<()> {
         }
     }
 
-    rl.save_history("history.txt")?;
+    rl.save_history(history_path)?;
     Ok(())
 }
 
