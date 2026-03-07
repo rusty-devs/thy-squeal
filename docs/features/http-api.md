@@ -85,6 +85,17 @@ Content-Type: application/json
 }
 ```
 
+### Execute Parameterized SQL
+```bash
+POST /_query
+Content-Type: application/json
+
+{
+  "sql": "SELECT * FROM users WHERE id = $1 AND status = ?",
+  "params": [1, "active"]
+}
+```
+
 ### Response
 ```json
 {

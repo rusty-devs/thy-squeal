@@ -55,6 +55,32 @@ The parser is decomposed into submodules for maintainability:
 - `COMMIT`
 - `ROLLBACK`
 
+### Parameterized Queries
+thy-squeal supports parameterized queries to prevent SQL injection and improve performance:
+
+#### Positional Placeholders (`?`)
+```sql
+SELECT * FROM users WHERE id = ? AND status = ?
+```
+Parameters are passed as a JSON array in the `params` field.
+
+#### Named Placeholders (`$1`, `$2`, etc.)
+```sql
+SELECT * FROM users WHERE id = $1 AND name = $2
+```
+Parameters are matched by index (1-based).
+
+**Example via HTTP API:**
+```bash
+POST /_query
+Content-Type: application/json
+
+{
+  "sql": "SELECT * FROM users WHERE id = $1 AND status = ?",
+  "params": [1, "active"]
+}
+```
+
 ### System Metadata
 thy-squeal supports the standard `information_schema` for discovering database metadata.
 
