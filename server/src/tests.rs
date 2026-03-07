@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::{create_app, sql::Executor};
+    use crate::{http::create_app, sql::Executor};
     use axum::{
         body::Body,
         http::{Request, StatusCode},

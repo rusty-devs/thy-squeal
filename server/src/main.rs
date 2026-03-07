@@ -1,132 +1,14 @@
 mod config;
 mod storage;
 mod sql;
+mod http;
 #[cfg(test)]
 mod tests;
 
 use std::net::SocketAddr;
 use std::sync::Arc;
-use axum::{
-    Router,
-    routing::{get, post},
-    extract::State,
-    Json,
-};
-use serde::{Deserialize, Serialize};
-use tower_http::cors::{Any, CorsLayer};
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
-
-#[derive(Clone)]
-struct AppState {
-    _config: config::Config,
-    executor: Arc<sql::Executor>,
-}
-
-#[derive(Deserialize)]
-struct QueryRequest {
-    sql: String,
-    #[allow(dead_code)]
-    #[serde(rename = "params", default)]
-    _params: Vec<serde_json::Value>,
-}
-
-#[derive(Serialize)]
-struct QueryResponse {
-    success: bool,
-    #[serde(default)]
-    columns: Vec<String>,
-    #[serde(default)]
-    data: Vec<serde_json::Value>,
-    #[serde(default)]
-    rows_affected: u64,
-    #[serde(default)]
-    execution_time_ms: u64,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    error: Option<sql::SqlError>,
-}
-
-async fn root() -> &'static str {
-    "thy-squeal SQL server"
-}
-
-async fn health() -> &'static str {
-    "OK"
-}
-
-async fn execute_query(
-    State(state): State<AppState>,
-    Json(req): Json<QueryRequest>,
-) -> Json<QueryResponse> {
-    let start = std::time::Instant::now();
-    
-    match state.executor.execute(&req.sql).await {
-        Ok(result) => {
-            let data: Vec<serde_json::Value> = result.rows.iter().map(|row| {
-                let mut map = serde_json::Map::new();
-                for (i, col) in result.columns.iter().enumerate() {
-                    if let Some(val) = row.get(i) {
-                        map.insert(col.clone(), value_to_json(val));
-                    }
-                }
-                serde_json::Value::Object(map)
-            }).collect();
-
-            Json(QueryResponse {
-                success: true,
-                columns: result.columns,
-                data,
-                rows_affected: result.rows_affected,
-                execution_time_ms: start.elapsed().as_millis() as u64,
-                error: None,
-            })
-        }
-        Err(e) => {
-            tracing::error!("Query error: {:?}", e);
-            Json(QueryResponse {
-                success: false,
-                columns: vec![],
-                data: vec![],
-                rows_affected: 0,
-                execution_time_ms: start.elapsed().as_millis() as u64,
-                error: Some(e),
-            })
-        }
-    }
-}
-
-fn value_to_json(val: &storage::Value) -> serde_json::Value {
-    match val {
-        storage::Value::Null => serde_json::Value::Null,
-        storage::Value::Int(i) => serde_json::Value::Number((*i).into()),
-        storage::Value::Float(f) => serde_json::Value::Number(serde_json::Number::from_f64(*f).unwrap()),
-        storage::Value::Bool(b) => serde_json::Value::Bool(*b),
-        storage::Value::Text(s) => serde_json::Value::String(s.clone()),
-        storage::Value::Date(d) => serde_json::Value::String(d.to_string()),
-        storage::Value::DateTime(dt) => serde_json::Value::String(dt.to_string()),
-        storage::Value::Blob(b) => serde_json::Value::String(base64::Engine::encode(&base64::engine::general_purpose::STANDARD, b)),
-        storage::Value::Json(j) => j.clone(),
-    }
-}
-
-pub fn create_app(executor: Arc<sql::Executor>, config: config::Config) -> Router {
-    let state = AppState { 
-        _config: config,
-        executor,
-    };
-
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
-
-    Router::new()
-        .route("/", get(root))
-        .route("/health", get(health))
-        .route("/_query", post(execute_query))
-        .layer(cors)
-        .with_state(state)
-}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -154,7 +36,7 @@ async fn main() -> anyhow::Result<()> {
 
     let executor = Arc::new(sql::Executor::new(db));
     
-    let app = create_app(executor, config.clone());
+    let app = http::create_app(executor, config.clone());
 
     let addr = SocketAddr::from(([0, 0, 0, 0], config.server.http_port));
     
