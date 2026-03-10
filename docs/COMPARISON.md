@@ -19,6 +19,31 @@ thy-squeal is a **hybrid in-memory database** that combines:
 | **Joins** | Inner/Left | Full Support | No | Full Support | Full Support | Limited |
 | **ACID** | Supported (Snapshot) | Full Support | Limited | Full Support | Full Support | No |
 
+## SQL Feature Comparison
+
+The following table provides a more granular comparison of the SQL features currently supported by `thy-squeal` compared to `MySQL` and `PostgreSQL`.
+
+| Feature | thy-squeal (v0.4) | MySQL (8.x) | PostgreSQL (16.x) |
+| :--- | :--- | :--- | :--- |
+| **SELECT / INSERT / UPDATE / DELETE** | ✅ Full Support | ✅ Full Support | ✅ Full Support |
+| **WHERE / ORDER BY / LIMIT** | ✅ Full Support | ✅ Full Support | ✅ Full Support |
+| **JOINs (INNER / LEFT)** | ✅ Supported | ✅ Full Support | ✅ Full Support |
+| **Subqueries (IN / Correlated)** | ✅ Supported | ✅ Full Support | ✅ Full Support |
+| **Aggregations (GROUP BY / HAVING)** | ✅ Supported | ✅ Full Support | ✅ Full Support |
+| **Indexes (B-Tree / Hash / Composite)** | ✅ Supported | ✅ Supported | ✅ Supported |
+| **Functional / Partial / JSON Indexes** | ✅ Supported | ✅ Supported | ✅ Supported |
+| **Prepared Statements / Placeholders** | ✅ Supported | ✅ Supported | ✅ Supported |
+| **Transactions (ACID)** | ✅ Supported | ✅ Supported | ✅ Supported |
+| **Write-Ahead Logging (WAL)** | ✅ Supported | ✅ Supported | ✅ Supported |
+| **Information Schema** | ✅ Supported | ✅ Supported | ✅ Supported |
+| **Full-Text Search (Native SQL)** | ✅ SEARCH Command | ⚠️ Plugin/Limited | ⚠️ GIN/TSVector |
+| **Explain Plan** | ✅ EXPLAIN Command | ✅ EXPLAIN | ✅ EXPLAIN |
+| **Common Table Expressions (CTEs)** | ❌ No | ✅ Supported | ✅ Supported |
+| **Window Functions** | ❌ No | ✅ Supported | ✅ Supported |
+| **Stored Procedures / Triggers** | ❌ No | ✅ Supported | ✅ Supported |
+| **Schema Evolution (ALTER TABLE)** | ❌ No | ✅ Supported | ✅ Supported |
+| **Primary Keys / Foreign Keys** | ⚠️ Unique Only | ✅ Supported | ✅ Supported |
+
 ---
 
 ## thy-squeal vs. MySQL

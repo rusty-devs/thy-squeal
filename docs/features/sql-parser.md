@@ -55,6 +55,21 @@ The parser is decomposed into submodules for maintainability:
 - `COMMIT`
 - `ROLLBACK`
 
+### Prepared Statements
+thy-squeal supports server-side prepared statements for query reuse and performance:
+
+- `PREPARE name FROM 'sql_query'`
+- `EXECUTE name [USING val1, val2, ...]`
+- `DEALLOCATE PREPARE name`
+
+**Example:**
+```sql
+PREPARE inst FROM 'INSERT INTO users (id, name) VALUES (?, ?)';
+EXECUTE inst USING 1, 'Alice';
+EXECUTE inst USING 2, 'Bob';
+DEALLOCATE PREPARE inst;
+```
+
 ### Parameterized Queries
 thy-squeal supports parameterized queries to prevent SQL injection and improve performance:
 

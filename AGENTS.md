@@ -7,8 +7,10 @@ thy-squeal is a SQL server with HTTP JSON API, built with Rust. It's a Cargo wor
 - `client/` - CLI client with REPL; `--http -e "SQL"` for one-off queries
 
 ### Current Implementation Notes
-- **SQL parsing**: Uses Pest grammar (`server/src/sql/sql.pest`). Supports SELECT, INSERT, UPDATE, DELETE, CREATE TABLE, DROP TABLE, CREATE INDEX, EXPLAIN, SEARCH, BEGIN, COMMIT, ROLLBACK.
+- **SQL parsing**: Uses Pest grammar (`server/src/sql/sql.pest`). Supports SELECT, INSERT, UPDATE, DELETE, CREATE TABLE, DROP TABLE, CREATE INDEX, EXPLAIN, SEARCH, BEGIN, COMMIT, ROLLBACK, PREPARE, EXECUTE, DEALLOCATE.
 - **SQL Execution**: Highly modularized executor supporting JOINs, Subqueries, Aggregations, GROUP BY, HAVING, ORDER BY, and LIMIT/OFFSET.
+- **Placeholders**: Supports positional (`?`) and named (`$1`) placeholders via `resolve_placeholders` AST pass.
+- **Prepared Statements**: Server-side storage of parsed `SqlStmt` ASTs in the `Executor` for efficient reuse.
 - **Storage**: Hybrid in-memory storage with Sled-based Write-Ahead Logging (WAL) and snapshotting. Supports B-Tree, Hash, JSON Path, Functional, and Partial indexes.
 - **Information Schema**: Provides metadata via virtual `information_schema` tables (tables, columns, indexes).
 

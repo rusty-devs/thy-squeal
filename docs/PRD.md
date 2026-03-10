@@ -141,14 +141,14 @@ thy-squeal/                          # Cargo workspace
 - [x] **Write-Ahead Logging (WAL)**: Durability beyond snapshots
 - [x] **Information Schema**: Metadata discoverability
 - [x] **Explain Plan**: Query execution transparency
-- [ ] **SQL Dump/Restore**: Export/Import SQL scripts
+- [x] **SQL Dump/Restore**: Export/Import SQL scripts
 
 ### Phase 5: Ecosystem & Client (v0.5)
 - [ ] **MySQL Protocol Compatibility**: Support standard MySQL clients
 - [x] Client CLI (Clap)
 - [x] REPL with history and HTTP execution
 - [ ] JavaScript REPL (QuickJS)
-- [ ] Parameterized Queries (Prepared statements)
+- [x] Parameterized Queries (Prepared statements)
 
 ### Phase 6: Production (v1.0)
 - [ ] Authentication & Role-Based Access Control (RBAC)

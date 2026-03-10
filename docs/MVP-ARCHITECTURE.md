@@ -25,6 +25,7 @@ Client (CLI/REPL)  →  POST /_query  →  Executor::execute(sql)
 - **Parser**: Split into statement-specific modules (`ddl`, `dml`, `select`) and expression parsing (`expr/`).
 - **Evaluator**: Dedicated modules for column resolution, condition filtering, and expression evaluation.
 - **Executor**: Highly decomposed into command-specific handlers, including specialized logic for aggregation, joins, and search.
+- **Prepared Statements**: Efficient server-side query caching within the `Executor` via AST storage.
 
 ---
 
@@ -80,5 +81,5 @@ server/src/
 |---------|--------|-------------|
 | SQL Dump/Restore | ✅ Done | Export/Import database state as .sql scripts |
 | MySQL Protocol | 🏗 Todo | Support standard MySQL clients over TCP port 3306 |
-| Parameterized Queries | 🏗 Todo | Prevention of SQL injection and query reuse |
+| Parameterized Queries | ✅ Done | Prevention of SQL injection and query reuse |
 | Query Optimization | 🏗 Todo | Cost-based optimizer for join ordering |
