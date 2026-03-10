@@ -2,10 +2,10 @@ use crate::sql::eval::{evaluate_condition_joined, Evaluator};
 use crate::storage::DatabaseState;
 use uuid::Uuid;
 
-use super::error::StorageError;
-use super::table::Table;
-use super::row::Row;
-use super::value::Value;
+use super::super::error::StorageError;
+use super::super::row::Row;
+use super::super::value::Value;
+use super::Table;
 
 impl Table {
     pub fn insert(

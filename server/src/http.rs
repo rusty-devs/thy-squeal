@@ -141,6 +141,7 @@ impl HttpServer {
             ),
             Value::Text(s) => serde_json::Value::String(s),
             Value::Bool(b) => serde_json::Value::Bool(b),
+            Value::DateTime(d) => serde_json::Value::String(d.to_rfc3339()),
             Value::Json(j) => j,
         }
     }

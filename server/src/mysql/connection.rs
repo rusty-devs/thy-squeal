@@ -1,39 +1,13 @@
-use crate::sql::executor::Executor;
-use crate::storage::Value;
 use anyhow::Result;
 use byteorder::{LittleEndian, WriteBytesExt};
 use std::sync::Arc;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::{TcpListener, TcpStream};
-use tracing::{error, info};
+use tokio::net::TcpStream;
+use tracing::info;
+use crate::sql::executor::{Executor, QueryResult};
+use crate::storage::Value;
+use super::packet::*;
 
-/// MySQL Protocol Handler
-pub struct MySqlProtocol {
-    executor: Arc<Executor>,
-}
-
-impl MySqlProtocol {
-    pub fn new(executor: Arc<Executor>) -> Self {
-        Self { executor }
-    }
-
-    pub async fn run(&self, addr: &str) -> Result<()> {
-        let listener = TcpListener::bind(addr).await?;
-        info!("MySQL Protocol listening on {}", addr);
-
-        loop {
-            let (socket, _) = listener.accept().await?;
-            let executor = self.executor.clone();
-            tokio::spawn(async move {
-                if let Err(e) = handle_connection(socket, executor).await {
-                    error!("MySQL connection error: {}", e);
-                }
-            });
-        }
-    }
-}
-
-async fn handle_connection(mut socket: TcpStream, executor: Arc<Executor>) -> Result<()> {
+pub async fn handle_connection(mut socket: TcpStream, executor: Arc<Executor>) -> Result<()> {
     // 1. Send Initial Handshake Packet
     send_handshake(&mut socket).await?;
 
@@ -92,32 +66,6 @@ async fn handle_connection(mut socket: TcpStream, executor: Arc<Executor>) -> Re
     Ok(())
 }
 
-async fn read_packet(socket: &mut TcpStream) -> Result<(u8, Vec<u8>)> {
-    let mut header = [0u8; 4];
-    socket.read_exact(&mut header).await?;
-    
-    let len = (header[0] as usize) | ((header[1] as usize) << 8) | ((header[2] as usize) << 16);
-    let seq = header[3];
-    
-    let mut payload = vec![0u8; len];
-    socket.read_exact(&mut payload).await?;
-    
-    Ok((seq, payload))
-}
-
-async fn send_packet(socket: &mut TcpStream, seq: u8, payload: &[u8]) -> Result<()> {
-    let len = payload.len();
-    let mut header = [0u8; 4];
-    header[0] = (len & 0xFF) as u8;
-    header[1] = ((len >> 8) & 0xFF) as u8;
-    header[2] = ((len >> 16) & 0xFF) as u8;
-    header[3] = seq;
-    
-    socket.write_all(&header).await?;
-    socket.write_all(payload).await?;
-    Ok(())
-}
-
 async fn send_handshake(socket: &mut TcpStream) -> Result<()> {
     let mut payload = Vec::new();
     payload.push(10); // Protocol version
@@ -158,7 +106,7 @@ async fn send_error(socket: &mut TcpStream, seq: u8, code: u16, state: &str, msg
     send_packet(socket, seq, &payload).await
 }
 
-async fn send_result_set(socket: &mut TcpStream, mut seq: u8, result: crate::sql::executor::QueryResult) -> Result<()> {
+async fn send_result_set(socket: &mut TcpStream, mut seq: u8, result: QueryResult) -> Result<()> {
     // 1. Column Count
     let mut payload = Vec::new();
     write_len_enc_int(&mut payload, result.columns.len() as u64);
@@ -216,25 +164,4 @@ async fn send_eof(socket: &mut TcpStream, seq: u8) -> Result<()> {
     WriteBytesExt::write_u16::<LittleEndian>(&mut payload, 0x0002)?; // Status flags
     
     send_packet(socket, seq, &payload).await
-}
-
-fn write_len_enc_int(buf: &mut Vec<u8>, val: u64) {
-    if val < 251 {
-        buf.push(val as u8);
-    } else if val < 0x10000 {
-        buf.push(0xFC);
-        WriteBytesExt::write_u16::<LittleEndian>(buf, val as u16).unwrap();
-    } else if val < 0x1000000 {
-        buf.push(0xFD);
-        let bytes = (val as u32).to_le_bytes();
-        buf.extend_from_slice(&bytes[..3]);
-    } else {
-        buf.push(0xFE);
-        WriteBytesExt::write_u64::<LittleEndian>(buf, val).unwrap();
-    }
-}
-
-fn write_len_enc_str(buf: &mut Vec<u8>, s: &str) {
-    write_len_enc_int(buf, s.len() as u64);
-    buf.extend_from_slice(s.as_bytes());
 }

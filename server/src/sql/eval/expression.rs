@@ -1,5 +1,9 @@
+pub mod binary;
+pub mod function;
+pub mod subquery;
+
 use crate::storage::{DatabaseState, Row, Table, Value};
-use super::super::ast::{BinaryOp, Expression, ScalarFuncType};
+use super::super::ast::Expression;
 use super::super::error::{SqlError, SqlResult};
 use super::Evaluator;
 use super::column::resolve_column;
@@ -31,101 +35,16 @@ pub fn evaluate_expression_joined(
             Err(SqlError::ColumnNotFound(name.clone()))
         }
         Expression::Subquery(subquery) => {
-            let mut combined_outer = outer_contexts.to_vec();
-            combined_outer.extend_from_slice(contexts);
-
-            let result = futures::executor::block_on(executor.exec_select_internal(
-                (**subquery).clone(),
-                &combined_outer,
-                params,
-                db_state,
-            ))?;
-            if result.rows.is_empty() {
-                Ok(Value::Null)
-            } else if result.rows.len() > 1 {
-                Err(SqlError::Runtime(
-                    "Subquery returned more than one row".to_string(),
-                ))
-            } else if result.rows[0].is_empty() {
-                Ok(Value::Null)
-            } else {
-                Ok(result.rows[0][0].clone())
-            }
+            subquery::evaluate_subquery(executor, subquery, contexts, params, outer_contexts, db_state)
         }
         Expression::BinaryOp(left, op, right) => {
-            let l =
-                evaluate_expression_joined(executor, left, contexts, params, outer_contexts, db_state)?;
-            let r =
-                evaluate_expression_joined(executor, right, contexts, params, outer_contexts, db_state)?;
-
-            match (l, r) {
-                (Value::Int(a), Value::Int(b)) => match op {
-                    BinaryOp::Add => Ok(Value::Int(a + b)),
-                    BinaryOp::Sub => Ok(Value::Int(a - b)),
-                    BinaryOp::Mul => Ok(Value::Int(a * b)),
-                    BinaryOp::Div => {
-                        if b == 0 {
-                            return Err(SqlError::Runtime("Division by zero".to_string()));
-                        }
-                        Ok(Value::Int(a / b))
-                    }
-                },
-                (Value::Float(a), Value::Float(b)) => match op {
-                    BinaryOp::Add => Ok(Value::Float(a + b)),
-                    BinaryOp::Sub => Ok(Value::Float(a - b)),
-                    BinaryOp::Mul => Ok(Value::Float(a * b)),
-                    BinaryOp::Div => Ok(Value::Float(a / b)),
-                },
-                (Value::Int(a), Value::Float(b)) => {
-                    let a = a as f64;
-                    match op {
-                        BinaryOp::Add => Ok(Value::Float(a + b)),
-                        BinaryOp::Sub => Ok(Value::Float(a - b)),
-                        BinaryOp::Mul => Ok(Value::Float(a * b)),
-                        BinaryOp::Div => Ok(Value::Float(a / b)),
-                    }
-                }
-                (Value::Float(a), Value::Int(b)) => {
-                    let b = b as f64;
-                    match op {
-                        BinaryOp::Add => Ok(Value::Float(a + b)),
-                        BinaryOp::Sub => Ok(Value::Float(a - b)),
-                        BinaryOp::Mul => Ok(Value::Float(a * b)),
-                        BinaryOp::Div => Ok(Value::Float(a / b)),
-                    }
-                }
-                _ => Err(SqlError::TypeMismatch(
-                    "Unsupported types for binary operation".to_string(),
-                )),
-            }
+            let l = evaluate_expression_joined(executor, left, contexts, params, outer_contexts, db_state)?;
+            let r = evaluate_expression_joined(executor, right, contexts, params, outer_contexts, db_state)?;
+            binary::evaluate_binary_op(l, op, r)
         }
         Expression::ScalarFunc(sf) => {
             let val = evaluate_expression_joined(executor, &sf.arg, contexts, params, outer_contexts, db_state)?;
-            match sf.name {
-                ScalarFuncType::Lower => {
-                    let s = val.as_text().ok_or_else(|| {
-                        SqlError::TypeMismatch("LOWER requires text".to_string())
-                    })?;
-                    Ok(Value::Text(s.to_lowercase()))
-                }
-                ScalarFuncType::Upper => {
-                    let s = val.as_text().ok_or_else(|| {
-                        SqlError::TypeMismatch("UPPER requires text".to_string())
-                    })?;
-                    Ok(Value::Text(s.to_uppercase()))
-                }
-                ScalarFuncType::Length => {
-                    let s = val.as_text().ok_or_else(|| {
-                        SqlError::TypeMismatch("LENGTH requires text".to_string())
-                    })?;
-                    Ok(Value::Int(s.len() as i64))
-                }
-                ScalarFuncType::Abs => match val {
-                    Value::Int(i) => Ok(Value::Int(i.abs())),
-                    Value::Float(f) => Ok(Value::Float(f.abs())),
-                    _ => Err(SqlError::TypeMismatch("ABS requires numeric value".to_string())),
-                },
-            }
+            function::evaluate_scalar_func(&sf.name, val)
         }
         Expression::FunctionCall(_) => Err(SqlError::Runtime(
             "Aggregate functions must be evaluated at the top level".to_string(),
