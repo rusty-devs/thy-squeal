@@ -6,6 +6,16 @@
 - **AUTO_INCREMENT / SERIAL**: Automated ID generation for integer columns. Support for `SERIAL` shorthand and `AUTO_INCREMENT` column attribute.
 - **Enhanced information_schema**: Added `is_auto_increment` column to `information_schema.columns`.
 
+### Refactored
+- **Architectural Modularization**: Deep decomposition of the codebase for better maintainability:
+    - `sql/ast/`: Split into specialized modules for expressions, conditions, and statements.
+    - `sql/parser/`: Modularized into `ddl/`, `dml/`, and `select/` subdirectories.
+    - `sql/eval/`: Decomposed expression evaluation into `binary`, `function`, and `subquery` modules.
+    - `storage/table/`: Unified table structure, indexing, and mutation logic into a dedicated module.
+    - `storage/value/`: Split core enum from casting and comparison logic.
+    - `mysql/`: Fully decoupled protocol handling from the main server logic.
+- **Improved Robustness**: Refactored SQL join and alias parsing to be more resilient to optional keywords and complex syntax.
+
 ## [v0.4.0] - 2026-03-10
 ### Added
 - **MySQL Protocol Compatibility**: Native TCP support on port 3306. Allows standard MySQL clients (CLI, DBeaver, etc.) to connect.

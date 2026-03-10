@@ -82,4 +82,6 @@ server/src/
 | SQL Dump/Restore | ✅ Done | Export/Import database state as .sql scripts |
 | MySQL Protocol | ✅ Done | Support standard MySQL clients over TCP port 3306 |
 | Parameterized Queries | ✅ Done | Prevention of SQL injection and query reuse |
+| AUTO_INCREMENT | ✅ Done | Automated ID generation for integer columns |
+| ALTER TABLE | ✅ Done | Non-destructive schema evolution |
 | Query Optimization | 🏗 Todo | Cost-based optimizer for join ordering |

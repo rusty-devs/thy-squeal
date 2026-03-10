@@ -7,11 +7,11 @@ thy-squeal is a SQL server with HTTP JSON API, built with Rust. It's a Cargo wor
 - `client/` - CLI client with REPL; `--http -e "SQL"` for one-off queries
 
 ### Current Implementation Notes
-- **SQL parsing**: Uses Pest grammar (`server/src/sql/sql.pest`). Supports SELECT, INSERT, UPDATE, DELETE, CREATE TABLE, DROP TABLE, CREATE INDEX, EXPLAIN, SEARCH, BEGIN, COMMIT, ROLLBACK, PREPARE, EXECUTE, DEALLOCATE.
-- **SQL Execution**: Highly modularized executor supporting JOINs, Subqueries, Aggregations, GROUP BY, HAVING, ORDER BY, and LIMIT/OFFSET.
-- **Placeholders**: Supports positional (`?`) and named (`$1`) placeholders via `resolve_placeholders` AST pass.
-- **Prepared Statements**: Server-side storage of parsed `SqlStmt` ASTs in the `Executor` for efficient reuse.
-- **Storage**: Hybrid in-memory storage with Sled-based Write-Ahead Logging (WAL) and snapshotting. Supports B-Tree, Hash, JSON Path, Functional, and Partial indexes.
+- **SQL parsing**: Uses Pest grammar (`server/src/sql/sql.pest`). Supports SELECT, INSERT, UPDATE, DELETE, CREATE TABLE, ALTER TABLE, DROP TABLE, CREATE INDEX, EXPLAIN, SEARCH, BEGIN, COMMIT, ROLLBACK, PREPARE, EXECUTE, DEALLOCATE.
+- **SQL Execution**: Highly modularized executor supporting JOINs (INNER/LEFT), Subqueries (IN/Correlated), Aggregations, GROUP BY, HAVING, ORDER BY, and LIMIT/OFFSET.
+- **Auto-Increment**: Support for `AUTO_INCREMENT` attribute and `SERIAL` data type.
+- **MySQL Protocol**: Native TCP support on port 3306.
+- **Storage**: Hybrid in-memory storage with Sled-based Write-Ahead Logging (WAL) and snapshotting.
 - **Information Schema**: Provides metadata via virtual `information_schema` tables (tables, columns, indexes).
 
 ## Project Structure (Server)
@@ -19,38 +19,18 @@ thy-squeal is a SQL server with HTTP JSON API, built with Rust. It's a Cargo wor
 ```
 server/src/
 ├── main.rs          # Entry point
-├── config.rs        # Configuration
 ├── http.rs          # Axum HTTP handlers
+├── mysql/           # MySQL Protocol handler
 ├── sql/             # SQL Engine
-│   ├── ast.rs       # Abstract Syntax Tree
+│   ├── ast/         # Decomposed AST definitions
 │   ├── error.rs     # SQL Errors
-│   ├── sql.pest     # Pest Grammar
-│   ├── eval/        # Expression Evaluation
-│   │   ├── column.rs     # Scoped Column Resolution
-│   │   ├── condition.rs  # WHERE/HAVING filters
-│   │   └── expression.rs # Math/Functions/Subqueries
-│   ├── executor/    # Statement Execution
-│   │   ├── aggregate/    # Grouping and Aggregates
-│   │   ├── dml/          # Insert/Update/Delete
-│   │   ├── ddl.rs        # Table/Index creation
-│   │   ├── select.rs     # SELECT orchestration
-│   │   ├── explain.rs    # EXPLAIN plan
-│   │   └── search.rs     # Full-text search
-│   └── parser/      # Pest-based parsing
-│       ├── expr/         # Expression parsing
-│       ├── select.rs     # SELECT parsing
-│       ├── dml.rs        # INSERT/UPDATE/DELETE parsing
-│       └── ddl.rs        # CREATE/DROP parsing
-├── storage/         # Storage Engine
-│   ├── mod.rs       # Database entry point
-│   ├── table.rs     # Table metadata and search index
-│   ├── row.rs       # Row and Column definitions
-│   ├── index.rs     # BTree/Hash index implementations
-│   ├── mutation.rs  # Table mutation logic
-│   ├── wal.rs       # WAL recovery and log application
-│   ├── persistence.rs # Sled storage backend
-│   └── info_schema.rs # Information Schema virtual tables
-└── tests/           # Integration tests
+│   ├── eval/        # Modular expression evaluation
+│   ├── executor/    # Specialized statement executors
+│   └── parser/      # Modular Pest-based parsing
+└── storage/         # Storage Engine
+    ├── database.rs  # Database state management
+    ├── table/       # Modular table, index, and mutation logic
+    └── value/       # Modular data type handling
 ```
 
 ## Build, Test, and Development Commands
