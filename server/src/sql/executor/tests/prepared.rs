@@ -207,7 +207,12 @@ async fn test_parameterized_update_delete() {
 
     // DELETE
     executor
-        .execute("DELETE FROM users WHERE id = ?", vec![Value::Int(1)], None, None)
+        .execute(
+            "DELETE FROM users WHERE id = ?",
+            vec![Value::Int(1)],
+            None,
+            None,
+        )
         .await
         .unwrap();
 

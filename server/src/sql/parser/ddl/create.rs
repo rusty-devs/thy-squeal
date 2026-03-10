@@ -2,8 +2,8 @@ use super::super::super::ast::{
     CreateIndexStmt, CreateMaterializedViewStmt, CreateTableStmt, IndexType, SqlStmt,
 };
 use super::super::super::error::{SqlError, SqlResult};
-use crate::sql::parser::Rule;
 use super::super::utils::expect_identifier;
+use crate::sql::parser::Rule;
 use crate::storage::{Column, DataType};
 
 pub fn parse_create_table(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {

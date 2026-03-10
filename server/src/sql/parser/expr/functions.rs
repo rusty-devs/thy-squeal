@@ -2,8 +2,8 @@ use super::super::super::ast::{
     AggregateType, Expression, FunctionCall, ScalarFuncType, ScalarFunction,
 };
 use super::super::super::error::{SqlError, SqlResult};
-use crate::sql::parser::Rule;
 use super::parse_any_expression;
+use crate::sql::parser::Rule;
 
 pub fn parse_aggregate(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expression> {
     let mut inner = pair.into_inner();

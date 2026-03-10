@@ -69,15 +69,30 @@ async fn test_composite_btree_index() {
         .unwrap();
 
     executor
-        .execute("INSERT INTO users VALUES ('Alice', 'Smith')", vec![], None, None)
+        .execute(
+            "INSERT INTO users VALUES ('Alice', 'Smith')",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap();
     executor
-        .execute("INSERT INTO users VALUES ('Bob', 'Smith')", vec![], None, None)
+        .execute(
+            "INSERT INTO users VALUES ('Bob', 'Smith')",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap();
     executor
-        .execute("INSERT INTO users VALUES ('Charlie', 'Brown')", vec![], None, None)
+        .execute(
+            "INSERT INTO users VALUES ('Charlie', 'Brown')",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap();
 
@@ -190,7 +205,12 @@ async fn test_partial_index() {
     let executor = Arc::new(Executor::new(db));
 
     executor
-        .execute("CREATE TABLE orders (id INT, status TEXT)", vec![], None, None)
+        .execute(
+            "CREATE TABLE orders (id INT, status TEXT)",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap();
     executor
@@ -297,10 +317,12 @@ async fn test_index_selectivity() {
         .await
         .unwrap();
     println!("EXPLAIN non-selective: {:?}", res.rows);
-    assert!(res.rows[0][1]
-        .as_text()
-        .unwrap()
-        .contains("Full Table Scan"));
+    assert!(
+        res.rows[0][1]
+            .as_text()
+            .unwrap()
+            .contains("Full Table Scan")
+    );
 
     // val=10 is highly selective (1% of rows). Should use Index.
     let res = executor
@@ -313,8 +335,10 @@ async fn test_index_selectivity() {
         .await
         .unwrap();
     println!("EXPLAIN selective: {:?}", res.rows);
-    assert!(res.rows[0][1]
-        .as_text()
-        .unwrap()
-        .contains("Index Lookup (BTree)"));
+    assert!(
+        res.rows[0][1]
+            .as_text()
+            .unwrap()
+            .contains("Index Lookup (BTree)")
+    );
 }

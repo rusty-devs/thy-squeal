@@ -1,8 +1,8 @@
 use super::super::super::ast::{Join, JoinType};
 use super::super::super::error::{SqlError, SqlResult};
-use crate::sql::parser::Rule;
 use super::super::expr::parse_condition;
 use super::columns::parse_alias;
+use crate::sql::parser::Rule;
 
 pub fn parse_join(pair: pest::iterators::Pair<Rule>) -> SqlResult<Join> {
     let inner = pair.into_inner();
@@ -32,7 +32,8 @@ pub fn parse_join(pair: pest::iterators::Pair<Rule>) -> SqlResult<Join> {
         }
     }
 
-    let table_pair = table_name_pair.ok_or_else(|| SqlError::Parse("Missing table name in JOIN".to_string()))?;
+    let table_pair =
+        table_name_pair.ok_or_else(|| SqlError::Parse("Missing table name in JOIN".to_string()))?;
     let mut table_inner = table_pair.into_inner();
     let table_name_rule = table_inner
         .next()

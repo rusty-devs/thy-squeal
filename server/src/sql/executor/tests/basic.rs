@@ -40,7 +40,9 @@ async fn test_drop_table() {
         .await
         .unwrap();
 
-    let result = executor.execute("SELECT * FROM users", vec![], None, None).await;
+    let result = executor
+        .execute("SELECT * FROM users", vec![], None, None)
+        .await;
     assert!(matches!(result, Err(SqlError::TableNotFound(_))));
 }
 
@@ -70,7 +72,12 @@ async fn test_select_where() {
     assert_eq!(result.rows[0][1], Value::Text("Bob".to_string()));
 
     let result = executor
-        .execute("SELECT * FROM users WHERE name = 'Alice'", vec![], None, None)
+        .execute(
+            "SELECT * FROM users WHERE name = 'Alice'",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap();
     assert_eq!(result.rows.len(), 1);
@@ -92,7 +99,12 @@ async fn test_update() {
         .unwrap();
 
     executor
-        .execute("UPDATE users SET name = 'Bob' WHERE id = 1", vec![], None, None)
+        .execute(
+            "UPDATE users SET name = 'Bob' WHERE id = 1",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap();
 
@@ -241,7 +253,12 @@ async fn test_group_by_having() {
     let executor = Arc::new(Executor::new(db));
 
     executor
-        .execute("CREATE TABLE sales (dept TEXT, amount INT)", vec![], None, None)
+        .execute(
+            "CREATE TABLE sales (dept TEXT, amount INT)",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap();
     executor
@@ -315,7 +332,12 @@ async fn test_explain() {
         .await
         .unwrap();
     let result = executor
-        .execute("EXPLAIN SELECT * FROM users WHERE id = 1", vec![], None, None)
+        .execute(
+            "EXPLAIN SELECT * FROM users WHERE id = 1",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap();
 

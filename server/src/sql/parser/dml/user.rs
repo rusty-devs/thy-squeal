@@ -7,11 +7,21 @@ pub fn parse_create_user(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt
     let mut inner = pair.into_inner();
     let _ = inner.next(); // KW_CREATE
     let _ = inner.next(); // KW_USER
-    
-    let username = inner.next().unwrap().as_str().trim_matches('\'').to_string();
+
+    let username = inner
+        .next()
+        .unwrap()
+        .as_str()
+        .trim_matches('\'')
+        .to_string();
     let _ = inner.next(); // KW_IDENTIFIED
     let _ = inner.next(); // KW_BY
-    let password = inner.next().unwrap().as_str().trim_matches('\'').to_string();
+    let password = inner
+        .next()
+        .unwrap()
+        .as_str()
+        .trim_matches('\'')
+        .to_string();
 
     Ok(SqlStmt::CreateUser(CreateUserStmt { username, password }))
 }
@@ -20,7 +30,12 @@ pub fn parse_drop_user(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> 
     let mut inner = pair.into_inner();
     let _ = inner.next(); // KW_DROP
     let _ = inner.next(); // KW_USER
-    let username = inner.next().unwrap().as_str().trim_matches('\'').to_string();
+    let username = inner
+        .next()
+        .unwrap()
+        .as_str()
+        .trim_matches('\'')
+        .to_string();
 
     Ok(SqlStmt::DropUser(DropUserStmt { username }))
 }
@@ -28,10 +43,10 @@ pub fn parse_drop_user(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> 
 pub fn parse_grant(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
     let mut inner = pair.into_inner();
     let _ = inner.next(); // KW_GRANT
-    
+
     let privileges = parse_privilege_list(inner.next().unwrap())?;
     let _ = inner.next(); // KW_ON
-    
+
     let target = inner.next().unwrap();
     let table = if target.as_rule() == Rule::table_name {
         Some(target.as_str().trim().to_string())
@@ -42,18 +57,27 @@ pub fn parse_grant(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
     };
 
     let _ = inner.next(); // KW_TO
-    let username = inner.next().unwrap().as_str().trim_matches('\'').to_string();
+    let username = inner
+        .next()
+        .unwrap()
+        .as_str()
+        .trim_matches('\'')
+        .to_string();
 
-    Ok(SqlStmt::Grant(GrantStmt { privileges, table, username }))
+    Ok(SqlStmt::Grant(GrantStmt {
+        privileges,
+        table,
+        username,
+    }))
 }
 
 pub fn parse_revoke(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
     let mut inner = pair.into_inner();
     let _ = inner.next(); // KW_REVOKE
-    
+
     let privileges = parse_privilege_list(inner.next().unwrap())?;
     let _ = inner.next(); // KW_ON
-    
+
     let target = inner.next().unwrap();
     let table = if target.as_rule() == Rule::table_name {
         Some(target.as_str().trim().to_string())
@@ -64,9 +88,18 @@ pub fn parse_revoke(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
     };
 
     let _ = inner.next(); // KW_FROM
-    let username = inner.next().unwrap().as_str().trim_matches('\'').to_string();
+    let username = inner
+        .next()
+        .unwrap()
+        .as_str()
+        .trim_matches('\'')
+        .to_string();
 
-    Ok(SqlStmt::Revoke(RevokeStmt { privileges, table, username }))
+    Ok(SqlStmt::Revoke(RevokeStmt {
+        privileges,
+        table,
+        username,
+    }))
 }
 
 fn parse_privilege_list(pair: pest::iterators::Pair<Rule>) -> SqlResult<Vec<Privilege>> {

@@ -26,7 +26,12 @@ async fn test_inner_join() {
         .await
         .unwrap();
     executor
-        .execute("INSERT INTO posts VALUES (101, 1, 'Hello')", vec![], None, None)
+        .execute(
+            "INSERT INTO posts VALUES (101, 1, 'Hello')",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap();
 
@@ -73,7 +78,12 @@ async fn test_left_join() {
         .await
         .unwrap();
     executor
-        .execute("INSERT INTO posts VALUES (101, 1, 'Hello')", vec![], None, None)
+        .execute(
+            "INSERT INTO posts VALUES (101, 1, 'Hello')",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap();
 

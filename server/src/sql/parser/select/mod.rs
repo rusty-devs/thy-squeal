@@ -4,8 +4,8 @@ pub mod joins;
 
 use super::super::ast::{SelectStmt, SqlStmt};
 use super::super::error::{SqlError, SqlResult};
-use crate::sql::parser::Rule;
 use super::expr::parse_condition;
+use crate::sql::parser::Rule;
 pub use clauses::*;
 pub use columns::*;
 pub use joins::*;
@@ -45,7 +45,7 @@ pub fn parse_select(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
 }
 
 pub fn parse_select_inner(pair: pest::iterators::Pair<Rule>) -> SqlResult<SelectStmt> {
-    let mut inner = if pair.as_rule() == Rule::select_stmt_inner {
+    let inner = if pair.as_rule() == Rule::select_stmt_inner {
         pair.into_inner()
     } else {
         return Err(SqlError::Parse(format!(

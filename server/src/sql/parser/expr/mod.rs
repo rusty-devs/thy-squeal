@@ -104,10 +104,10 @@ pub fn parse_factor(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expression> 
     match first.as_rule() {
         Rule::aggregate_func => parse_aggregate(first),
         Rule::scalar_func => parse_scalar_func(first),
-        Rule::literal 
-        | Rule::string_literal 
-        | Rule::number_literal 
-        | Rule::boolean_literal 
+        Rule::literal
+        | Rule::string_literal
+        | Rule::number_literal
+        | Rule::boolean_literal
         | Rule::KW_NULL => Ok(Expression::Literal(parse_literal(first)?)),
         Rule::placeholder => parse_placeholder(first),
         Rule::column_ref => {

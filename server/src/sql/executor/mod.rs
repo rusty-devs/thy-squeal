@@ -56,24 +56,30 @@ impl Executor {
         privilege: Privilege,
         db_state: &DatabaseState,
     ) -> SqlResult<()> {
-        println!("CHECK PRIVILEGE: user={}, table={:?}, priv={:?}", username, table, privilege);
-        let user = db_state.users.get(username).ok_or_else(|| {
-            SqlError::Runtime(format!("User {} not found", username))
-        })?;
+        println!(
+            "CHECK PRIVILEGE: user={}, table={:?}, priv={:?}",
+            username, table, privilege
+        );
+        let user = db_state
+            .users
+            .get(username)
+            .ok_or_else(|| SqlError::Runtime(format!("User {} not found", username)))?;
 
-        println!("USER PRIVS: global={:?}, table={:?}", user.global_privileges, user.table_privileges);
+        println!(
+            "USER PRIVS: global={:?}, table={:?}",
+            user.global_privileges, user.table_privileges
+        );
 
         // root always has All
         if user.global_privileges.contains(&Privilege::All) {
             return Ok(());
         }
 
-        if let Some(t) = table {
-            if let Some(privs) = user.table_privileges.get(t) {
-                if privs.contains(&Privilege::All) || privs.contains(&privilege) {
-                    return Ok(());
-                }
-            }
+        if let Some(t) = table
+            && let Some(privs) = user.table_privileges.get(t)
+            && (privs.contains(&Privilege::All) || privs.contains(&privilege))
+        {
+            return Ok(());
         }
 
         if user.global_privileges.contains(&privilege) {
@@ -84,7 +90,9 @@ impl Executor {
             "User {} does not have {:?} privilege{}",
             username,
             privilege,
-            table.map(|t| format!(" on table {}", t)).unwrap_or_default()
+            table
+                .map(|t| format!(" on table {}", t))
+                .unwrap_or_default()
         )))
     }
 

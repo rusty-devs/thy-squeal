@@ -40,7 +40,12 @@ impl Executor {
                 SqlStmt::AlterTable(at) => {
                     {
                         let db = self.db.read().await;
-                        self.check_privilege(&user, Some(&at.table), Privilege::Create, db.state())?;
+                        self.check_privilege(
+                            &user,
+                            Some(&at.table),
+                            Privilege::Create,
+                            db.state(),
+                        )?;
                     }
                     self.exec_alter_table(at, transaction_id.as_deref()).await?
                 }
@@ -82,7 +87,12 @@ impl Executor {
                 SqlStmt::CreateIndex(ci) => {
                     {
                         let db = self.db.read().await;
-                        self.check_privilege(&user, Some(&ci.table), Privilege::Create, db.state())?;
+                        self.check_privilege(
+                            &user,
+                            Some(&ci.table),
+                            Privilege::Create,
+                            db.state(),
+                        )?;
                     }
                     self.exec_create_index(ci, transaction_id.as_deref())
                         .await?
@@ -90,10 +100,9 @@ impl Executor {
                 SqlStmt::Select(s) => {
                     let table = s.table.clone();
                     if let Some(id) = transaction_id.as_deref() {
-                        let state = self
-                            .transactions
-                            .get(id)
-                            .ok_or_else(|| SqlError::Runtime("Transaction not found".to_string()))?;
+                        let state = self.transactions.get(id).ok_or_else(|| {
+                            SqlError::Runtime("Transaction not found".to_string())
+                        })?;
                         if !table.is_empty() && !table.starts_with("information_schema.") {
                             self.check_privilege(&user, Some(&table), Privilege::Select, &state)?;
                         }
@@ -102,7 +111,12 @@ impl Executor {
                     } else {
                         let db = self.db.read().await;
                         if !table.is_empty() && !table.starts_with("information_schema.") {
-                            self.check_privilege(&user, Some(&table), Privilege::Select, db.state())?;
+                            self.check_privilege(
+                                &user,
+                                Some(&table),
+                                Privilege::Select,
+                                db.state(),
+                            )?;
                         }
                         self.exec_select_recursive(s, &[], &params, db.state(), None)
                             .await?
@@ -110,10 +124,9 @@ impl Executor {
                 }
                 SqlStmt::Explain(s) => {
                     if let Some(id) = transaction_id.as_deref() {
-                        let state = self
-                            .transactions
-                            .get(id)
-                            .ok_or_else(|| SqlError::Runtime("Transaction not found".to_string()))?;
+                        let state = self.transactions.get(id).ok_or_else(|| {
+                            SqlError::Runtime("Transaction not found".to_string())
+                        })?;
                         self.exec_explain(s, &state, Some(id)).await?
                     } else {
                         let db = self.db.read().await;
@@ -122,10 +135,9 @@ impl Executor {
                 }
                 SqlStmt::Search(s) => {
                     if let Some(id) = transaction_id.as_deref() {
-                        let state = self
-                            .transactions
-                            .get(id)
-                            .ok_or_else(|| SqlError::Runtime("Transaction not found".to_string()))?;
+                        let state = self.transactions.get(id).ok_or_else(|| {
+                            SqlError::Runtime("Transaction not found".to_string())
+                        })?;
                         self.check_privilege(&user, Some(&s.table), Privilege::Select, &state)?;
                         self.exec_search(s, &state, Some(id)).await?
                     } else {

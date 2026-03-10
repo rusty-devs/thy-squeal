@@ -15,19 +15,26 @@ impl Executor {
 
         // Log to WAL (we should add a WalRecord for this)
         // For now skip WAL for users or add it. Let's add it.
-        
+
         self.mutate_state(tx_id, |state| {
             if state.users.contains_key(&stmt.username) {
-                return Err(SqlError::Runtime(format!("User {} already exists", stmt.username)));
+                return Err(SqlError::Runtime(format!(
+                    "User {} already exists",
+                    stmt.username
+                )));
             }
-            state.users.insert(stmt.username.clone(), User {
-                username: stmt.username,
-                password_hash: hashed,
-                global_privileges: vec![],
-                table_privileges: HashMap::new(),
-            });
+            state.users.insert(
+                stmt.username.clone(),
+                User {
+                    username: stmt.username,
+                    password_hash: hashed,
+                    global_privileges: vec![],
+                    table_privileges: HashMap::new(),
+                },
+            );
             Ok(())
-        }).await?;
+        })
+        .await?;
 
         Ok(QueryResult {
             columns: vec![],
@@ -43,10 +50,13 @@ impl Executor {
         tx_id: Option<&str>,
     ) -> SqlResult<QueryResult> {
         self.mutate_state(tx_id, |state| {
-            state.users.remove(&stmt.username)
+            state
+                .users
+                .remove(&stmt.username)
                 .ok_or_else(|| SqlError::Runtime(format!("User {} not found", stmt.username)))?;
             Ok(())
-        }).await?;
+        })
+        .await?;
 
         Ok(QueryResult {
             columns: vec![],
@@ -56,11 +66,17 @@ impl Executor {
         })
     }
 
-    pub(crate) async fn exec_grant(&self, stmt: GrantStmt, tx_id: Option<&str>) -> SqlResult<QueryResult> {
+    pub(crate) async fn exec_grant(
+        &self,
+        stmt: GrantStmt,
+        tx_id: Option<&str>,
+    ) -> SqlResult<QueryResult> {
         self.mutate_state(tx_id, |state| {
-            let user = state.users.get_mut(&stmt.username)
+            let user = state
+                .users
+                .get_mut(&stmt.username)
                 .ok_or_else(|| SqlError::Runtime(format!("User {} not found", stmt.username)))?;
-            
+
             if let Some(table) = &stmt.table {
                 let entry = user.table_privileges.entry(table.clone()).or_default();
                 for p in &stmt.privileges {
@@ -76,7 +92,8 @@ impl Executor {
                 }
             }
             Ok(())
-        }).await?;
+        })
+        .await?;
 
         Ok(QueryResult {
             columns: vec![],
@@ -86,20 +103,28 @@ impl Executor {
         })
     }
 
-    pub(crate) async fn exec_revoke(&self, stmt: RevokeStmt, tx_id: Option<&str>) -> SqlResult<QueryResult> {
+    pub(crate) async fn exec_revoke(
+        &self,
+        stmt: RevokeStmt,
+        tx_id: Option<&str>,
+    ) -> SqlResult<QueryResult> {
         self.mutate_state(tx_id, |state| {
-            let user = state.users.get_mut(&stmt.username)
+            let user = state
+                .users
+                .get_mut(&stmt.username)
                 .ok_or_else(|| SqlError::Runtime(format!("User {} not found", stmt.username)))?;
-            
+
             if let Some(table) = &stmt.table {
                 if let Some(entry) = user.table_privileges.get_mut(table) {
                     entry.retain(|p| !stmt.privileges.contains(p));
                 }
             } else {
-                user.global_privileges.retain(|p| !stmt.privileges.contains(p));
+                user.global_privileges
+                    .retain(|p| !stmt.privileges.contains(p));
             }
             Ok(())
-        }).await?;
+        })
+        .await?;
 
         Ok(QueryResult {
             columns: vec![],

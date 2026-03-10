@@ -60,13 +60,23 @@ async fn test_dump_restore() {
 
     // Verify
     let res = executor2
-        .execute("SELECT name FROM dump_test WHERE id = 1", vec![], None, None)
+        .execute(
+            "SELECT name FROM dump_test WHERE id = 1",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap();
     assert_eq!(res.rows[0][0], Value::Text("alice".to_string()));
 
     let res = executor2
-        .execute("SELECT name FROM dump_test WHERE id = 2", vec![], None, None)
+        .execute(
+            "SELECT name FROM dump_test WHERE id = 2",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap();
     assert_eq!(res.rows[0][0], Value::Text("bob".to_string()));

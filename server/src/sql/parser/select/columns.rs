@@ -1,7 +1,7 @@
 use super::super::super::ast::{Expression, SelectColumn};
 use super::super::super::error::{SqlError, SqlResult};
-use crate::sql::parser::Rule;
 use super::super::expr::parse_expression;
+use crate::sql::parser::Rule;
 
 pub fn parse_select_columns(pair: pest::iterators::Pair<Rule>) -> SqlResult<Vec<SelectColumn>> {
     let mut columns = Vec::new();

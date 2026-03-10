@@ -1,7 +1,7 @@
 use super::super::super::ast::{Expression, SqlStmt, UpdateStmt};
 use super::super::super::error::{SqlError, SqlResult};
-use crate::sql::parser::Rule;
 use super::super::expr::{parse_any_expression, parse_where_clause};
+use crate::sql::parser::Rule;
 
 pub fn parse_update(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
     let mut inner = pair.into_inner();

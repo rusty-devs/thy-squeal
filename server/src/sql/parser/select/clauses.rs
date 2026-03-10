@@ -1,7 +1,7 @@
 use super::super::super::ast::{Expression, LimitClause, Order, OrderByItem};
 use super::super::super::error::SqlResult;
-use crate::sql::parser::Rule;
 use super::super::expr::parse_expression;
+use crate::sql::parser::Rule;
 
 pub fn parse_group_by(pair: pest::iterators::Pair<Rule>) -> SqlResult<Vec<Expression>> {
     let mut group_by = Vec::new();

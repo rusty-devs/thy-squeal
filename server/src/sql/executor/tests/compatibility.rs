@@ -20,11 +20,21 @@ async fn test_auto_increment() {
 
     // Insert without ID
     executor
-        .execute("INSERT INTO users (name) VALUES ('Alice')", vec![], None, None)
+        .execute(
+            "INSERT INTO users (name) VALUES ('Alice')",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap();
     executor
-        .execute("INSERT INTO users (name) VALUES ('Bob')", vec![], None, None)
+        .execute(
+            "INSERT INTO users (name) VALUES ('Bob')",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap();
 
@@ -40,12 +50,22 @@ async fn test_auto_increment() {
 
     // Insert with explicit NULL
     executor
-        .execute("INSERT INTO users VALUES (NULL, 'Charlie')", vec![], None, None)
+        .execute(
+            "INSERT INTO users VALUES (NULL, 'Charlie')",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap();
 
     let result = executor
-        .execute("SELECT * FROM users WHERE name = 'Charlie'", vec![], None, None)
+        .execute(
+            "SELECT * FROM users WHERE name = 'Charlie'",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap();
     assert_eq!(result.rows[0][0], Value::Int(3));
@@ -58,12 +78,22 @@ async fn test_serial_shorthand() {
 
     // Test with SERIAL shorthand
     executor
-        .execute("CREATE TABLE tasks (id SERIAL, task TEXT)", vec![], None, None)
+        .execute(
+            "CREATE TABLE tasks (id SERIAL, task TEXT)",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap();
 
     executor
-        .execute("INSERT INTO tasks (task) VALUES ('Task 1')", vec![], None, None)
+        .execute(
+            "INSERT INTO tasks (task) VALUES ('Task 1')",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap();
 
@@ -218,7 +248,12 @@ async fn test_constraints() {
 
     // 1. PRIMARY KEY uniqueness
     let err = executor
-        .execute("INSERT INTO groups VALUES (1, 'Duplicate')", vec![], None, None)
+        .execute(
+            "INSERT INTO groups VALUES (1, 'Duplicate')",
+            vec![],
+            None,
+            None,
+        )
         .await
         .unwrap_err();
     assert!(err.to_string().contains("Duplicate key"));

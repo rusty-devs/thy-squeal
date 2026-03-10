@@ -1,7 +1,7 @@
 use super::super::super::ast::{Expression, InsertStmt, SqlStmt};
 use super::super::super::error::{SqlError, SqlResult};
-use crate::sql::parser::Rule;
 use super::super::expr::parse_any_expression;
+use crate::sql::parser::Rule;
 
 pub fn parse_insert(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
     let inner = pair.into_inner();

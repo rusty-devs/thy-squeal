@@ -61,7 +61,12 @@ impl HttpServer {
         Json(payload): Json<QueryRequest>,
     ) -> impl IntoResponse {
         match executor
-            .execute(&payload.sql, vec![], payload.transaction_id, payload.username)
+            .execute(
+                &payload.sql,
+                vec![],
+                payload.transaction_id,
+                payload.username,
+            )
             .await
         {
             Ok(result) => (StatusCode::OK, Json(Self::map_result(result, None))),
