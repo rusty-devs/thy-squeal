@@ -2,6 +2,7 @@
 
 ## [v0.5.0] - 2026-03-10
 ### Added
+- **Authentication & RBAC**: Implementation of `CREATE USER`, `DROP USER`, `GRANT`, and `REVOKE`. Secure password hashing via `bcrypt`. Fine-grained permission enforcement for all SQL operations.
 - **Cost-Based Index Selection**: Optimizer now uses real-time index statistics (selectivity) to decide between Index Lookup and Full Table Scan.
 - **Materialized Views**: Support for `CREATE MATERIALIZED VIEW` with automatic background data refresh on underlying table mutations (`INSERT`, `UPDATE`, `DELETE`).
 - **Information Schema Expansion**: Added `statistics`, `key_column_usage`, and `schemata` tables for improved metadata discoverability and tool compatibility.

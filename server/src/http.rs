@@ -16,6 +16,7 @@ use tracing::error;
 struct QueryRequest {
     sql: String,
     transaction_id: Option<String>,
+    username: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -60,7 +61,7 @@ impl HttpServer {
         Json(payload): Json<QueryRequest>,
     ) -> impl IntoResponse {
         match executor
-            .execute(&payload.sql, vec![], payload.transaction_id)
+            .execute(&payload.sql, vec![], payload.transaction_id, payload.username)
             .await
         {
             Ok(result) => (StatusCode::OK, Json(Self::map_result(result, None))),

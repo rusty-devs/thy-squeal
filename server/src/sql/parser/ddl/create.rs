@@ -2,19 +2,27 @@ use super::super::super::ast::{
     CreateIndexStmt, CreateMaterializedViewStmt, CreateTableStmt, IndexType, SqlStmt,
 };
 use super::super::super::error::{SqlError, SqlResult};
-use super::super::super::parser::Rule;
+use crate::sql::parser::Rule;
 use super::super::utils::expect_identifier;
 use crate::storage::{Column, DataType};
 
 pub fn parse_create_table(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
     let mut inner = pair.into_inner();
     let name = inner
-        .find(|p| p.as_rule() == Rule::table_name)
-        .map(|p| p.as_str().trim().to_string())
+        .find(|p: &pest::iterators::Pair<Rule>| p.as_rule() == Rule::table_name)
+        .map(|p: pest::iterators::Pair<Rule>| {
+            let column_ref_rule = p.into_inner().next().unwrap();
+            column_ref_rule
+                .into_inner()
+                .filter(|pi| pi.as_rule() == Rule::path_identifier)
+                .map(|pi| pi.as_str().trim().to_string())
+                .collect::<Vec<_>>()
+                .join(".")
+        })
         .ok_or_else(|| SqlError::Parse("Missing table name".to_string()))?;
 
     let create_definitions_pair = inner
-        .find(|p| p.as_rule() == Rule::create_definitions)
+        .find(|p: &pest::iterators::Pair<Rule>| p.as_rule() == Rule::create_definitions)
         .ok_or_else(|| SqlError::Parse("Missing table definitions".to_string()))?;
 
     let mut columns = Vec::new();
@@ -189,7 +197,17 @@ pub fn parse_create_index(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStm
                     index_name = Some(p.as_str().trim().to_string());
                 }
             }
-            Rule::table_name => table = Some(p.as_str().trim().to_string()),
+            Rule::table_name => {
+                let column_ref_rule = p.into_inner().next().unwrap();
+                table = Some(
+                    column_ref_rule
+                        .into_inner()
+                        .filter(|pi| pi.as_rule() == Rule::path_identifier)
+                        .map(|pi| pi.as_str().trim().to_string())
+                        .collect::<Vec<_>>()
+                        .join("."),
+                )
+            }
             Rule::index_expression_list => {
                 for expr_pair in p.into_inner() {
                     if expr_pair.as_rule() == Rule::expression {

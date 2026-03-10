@@ -1,6 +1,6 @@
 use super::super::super::ast::{Join, JoinType};
 use super::super::super::error::{SqlError, SqlResult};
-use super::super::super::parser::Rule;
+use crate::sql::parser::Rule;
 use super::super::expr::parse_condition;
 use super::columns::parse_alias;
 
@@ -32,17 +32,21 @@ pub fn parse_join(pair: pest::iterators::Pair<Rule>) -> SqlResult<Join> {
         }
     }
 
-    let table_pair =
-        table_name_pair.ok_or_else(|| SqlError::Parse("Missing table name in JOIN".to_string()))?;
+    let table_pair = table_name_pair.ok_or_else(|| SqlError::Parse("Missing table name in JOIN".to_string()))?;
     let mut table_inner = table_pair.into_inner();
-    let table = table_inner
+    let table_name_rule = table_inner
         .next()
-        .ok_or_else(|| SqlError::Parse("Missing table name in JOIN".to_string()))?
-        .as_str()
-        .trim()
-        .to_string();
+        .ok_or_else(|| SqlError::Parse("Missing table name in JOIN".to_string()))?;
+    let column_ref_rule = table_name_rule.into_inner().next().unwrap();
+    let table = column_ref_rule
+        .into_inner()
+        .filter(|p| p.as_rule() == Rule::path_identifier)
+        .map(|p| p.as_str().trim().to_string())
+        .collect::<Vec<_>>()
+        .join(".");
 
     let mut table_alias = None;
+
     if let Some(alias_pair) = table_inner.next() {
         table_alias = Some(parse_alias(alias_pair)?);
     }

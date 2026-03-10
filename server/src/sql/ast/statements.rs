@@ -1,6 +1,6 @@
 use super::condition::Condition;
 use super::expression::Expression;
-use crate::storage::Column;
+use crate::storage::{Column, Privilege};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -192,6 +192,31 @@ pub enum JoinType {
 pub struct SelectColumn {
     pub expr: Expression,
     pub alias: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CreateUserStmt {
+    pub username: String,
+    pub password: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DropUserStmt {
+    pub username: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GrantStmt {
+    pub privileges: Vec<Privilege>,
+    pub table: Option<String>, // None means GLOBAL
+    pub username: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RevokeStmt {
+    pub privileges: Vec<Privilege>,
+    pub table: Option<String>,
+    pub username: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

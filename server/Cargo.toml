@@ -22,6 +22,7 @@ pest.workspace = true
 pest_derive.workspace = true
 byteorder = "1.5"
 bytes = "1.6"
+bcrypt = "0.15"
 
 axum = "0.7"
 dashmap = "5"

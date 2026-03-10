@@ -224,15 +224,15 @@ async fn test_materialized_views() {
     let executor = std::sync::Arc::new(crate::sql::Executor::new(db));
 
     executor
-        .execute("CREATE TABLE base (id INT, val INT)", vec![], None)
+        .execute("CREATE TABLE base (id INT, val INT)", vec![], None, None)
         .await
         .unwrap();
     executor
-        .execute("INSERT INTO base VALUES (1, 10)", vec![], None)
+        .execute("INSERT INTO base VALUES (1, 10)", vec![], None, None)
         .await
         .unwrap();
     executor
-        .execute("INSERT INTO base VALUES (2, 20)", vec![], None)
+        .execute("INSERT INTO base VALUES (2, 20)", vec![], None, None)
         .await
         .unwrap();
 
@@ -242,34 +242,35 @@ async fn test_materialized_views() {
             "CREATE MATERIALIZED VIEW mv_sum AS SELECT SUM(val) FROM base",
             vec![],
             None,
+            None,
         )
         .await
         .unwrap();
 
     let res = executor
-        .execute("SELECT * FROM mv_sum", vec![], None)
+        .execute("SELECT * FROM mv_sum", vec![], None, None)
         .await
         .unwrap();
     assert_eq!(res.rows[0][0], crate::storage::Value::Int(30));
 
     // 2. Trigger automatic refresh on INSERT
     executor
-        .execute("INSERT INTO base VALUES (3, 30)", vec![], None)
+        .execute("INSERT INTO base VALUES (3, 30)", vec![], None, None)
         .await
         .unwrap();
     let res = executor
-        .execute("SELECT * FROM mv_sum", vec![], None)
+        .execute("SELECT * FROM mv_sum", vec![], None, None)
         .await
         .unwrap();
     assert_eq!(res.rows[0][0], crate::storage::Value::Int(60));
 
     // 3. Trigger automatic refresh on DELETE
     executor
-        .execute("DELETE FROM base WHERE id = 1", vec![], None)
+        .execute("DELETE FROM base WHERE id = 1", vec![], None, None)
         .await
         .unwrap();
     let res = executor
-        .execute("SELECT * FROM mv_sum", vec![], None)
+        .execute("SELECT * FROM mv_sum", vec![], None, None)
         .await
         .unwrap();
     assert_eq!(res.rows[0][0], crate::storage::Value::Int(50));

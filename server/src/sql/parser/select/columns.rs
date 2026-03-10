@@ -1,6 +1,6 @@
 use super::super::super::ast::{Expression, SelectColumn};
 use super::super::super::error::{SqlError, SqlResult};
-use super::super::super::parser::Rule;
+use crate::sql::parser::Rule;
 use super::super::expr::parse_expression;
 
 pub fn parse_select_columns(pair: pest::iterators::Pair<Rule>) -> SqlResult<Vec<SelectColumn>> {

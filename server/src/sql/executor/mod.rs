@@ -10,12 +10,14 @@ pub mod select;
 #[cfg(test)]
 mod tests;
 pub mod tx;
+pub mod user;
 
 use super::ast::SqlStmt;
-use super::error::SqlResult;
+use super::error::{SqlError, SqlResult};
 use super::eval::Evaluator;
 use super::parser::parse;
-use crate::storage::{Database, DatabaseState, Row, Table, Value};
+use crate::storage::{Database, DatabaseState, Privilege, Row, Table, Value};
+
 use dashmap::DashMap;
 use futures::future::BoxFuture;
 
@@ -41,9 +43,49 @@ impl Executor {
         sql: &str,
         params: Vec<Value>,
         transaction_id: Option<String>,
+        username: Option<String>,
     ) -> SqlResult<QueryResult> {
         let stmt = parse(sql)?;
-        self.exec_stmt(stmt, params, transaction_id).await
+        self.exec_stmt(stmt, params, transaction_id, username).await
+    }
+
+    pub fn check_privilege(
+        &self,
+        username: &str,
+        table: Option<&str>,
+        privilege: Privilege,
+        db_state: &DatabaseState,
+    ) -> SqlResult<()> {
+        println!("CHECK PRIVILEGE: user={}, table={:?}, priv={:?}", username, table, privilege);
+        let user = db_state.users.get(username).ok_or_else(|| {
+            SqlError::Runtime(format!("User {} not found", username))
+        })?;
+
+        println!("USER PRIVS: global={:?}, table={:?}", user.global_privileges, user.table_privileges);
+
+        // root always has All
+        if user.global_privileges.contains(&Privilege::All) {
+            return Ok(());
+        }
+
+        if let Some(t) = table {
+            if let Some(privs) = user.table_privileges.get(t) {
+                if privs.contains(&Privilege::All) || privs.contains(&privilege) {
+                    return Ok(());
+                }
+            }
+        }
+
+        if user.global_privileges.contains(&privilege) {
+            return Ok(());
+        }
+
+        Err(SqlError::Runtime(format!(
+            "User {} does not have {:?} privilege{}",
+            username,
+            privilege,
+            table.map(|t| format!(" on table {}", t)).unwrap_or_default()
+        )))
     }
 
     pub(crate) fn refresh_materialized_views(&self, state: &mut DatabaseState) -> SqlResult<()> {

@@ -8,15 +8,15 @@ async fn test_parameterized_select() {
     let executor = Arc::new(Executor::new(db));
 
     executor
-        .execute("CREATE TABLE users (id INT, name TEXT)", vec![], None)
+        .execute("CREATE TABLE users (id INT, name TEXT)", vec![], None, None)
         .await
         .unwrap();
     executor
-        .execute("INSERT INTO users VALUES (1, 'Alice')", vec![], None)
+        .execute("INSERT INTO users VALUES (1, 'Alice')", vec![], None, None)
         .await
         .unwrap();
     executor
-        .execute("INSERT INTO users VALUES (2, 'Bob')", vec![], None)
+        .execute("INSERT INTO users VALUES (2, 'Bob')", vec![], None, None)
         .await
         .unwrap();
 
@@ -25,6 +25,7 @@ async fn test_parameterized_select() {
         .execute(
             "SELECT * FROM users WHERE id = ?",
             vec![Value::Int(2)],
+            None,
             None,
         )
         .await
@@ -37,6 +38,7 @@ async fn test_parameterized_select() {
         .execute(
             "SELECT * FROM users WHERE name = $1",
             vec![Value::Text("Alice".to_string())],
+            None,
             None,
         )
         .await
@@ -51,7 +53,7 @@ async fn test_parameterized_insert() {
     let executor = Arc::new(Executor::new(db));
 
     executor
-        .execute("CREATE TABLE users (id INT, name TEXT)", vec![], None)
+        .execute("CREATE TABLE users (id INT, name TEXT)", vec![], None, None)
         .await
         .unwrap();
 
@@ -61,12 +63,13 @@ async fn test_parameterized_insert() {
             "INSERT INTO users VALUES (?, $2)",
             vec![Value::Int(1), Value::Text("Alice".to_string())],
             None,
+            None,
         )
         .await
         .unwrap();
 
     let result = executor
-        .execute("SELECT * FROM users", vec![], None)
+        .execute("SELECT * FROM users", vec![], None, None)
         .await
         .unwrap();
     assert_eq!(result.rows.len(), 1);
@@ -84,6 +87,7 @@ async fn test_parameterized_insert_with_columns() {
             "CREATE TABLE users (id INT, name TEXT, email TEXT)",
             vec![],
             None,
+            None,
         )
         .await
         .unwrap();
@@ -94,12 +98,13 @@ async fn test_parameterized_insert_with_columns() {
             "INSERT INTO users (name, id) VALUES (?, ?)",
             vec![Value::Text("Bob".to_string()), Value::Int(2)],
             None,
+            None,
         )
         .await
         .unwrap();
 
     let result = executor
-        .execute("SELECT id, name, email FROM users", vec![], None)
+        .execute("SELECT id, name, email FROM users", vec![], None, None)
         .await
         .unwrap();
     assert_eq!(result.rows.len(), 1);
@@ -114,7 +119,7 @@ async fn test_prepare_execute() {
     let executor = Arc::new(Executor::new(db));
 
     executor
-        .execute("CREATE TABLE users (id INT, name TEXT)", vec![], None)
+        .execute("CREATE TABLE users (id INT, name TEXT)", vec![], None, None)
         .await
         .unwrap();
 
@@ -124,22 +129,23 @@ async fn test_prepare_execute() {
             "PREPARE inst FROM 'INSERT INTO users VALUES (?, ?)'",
             vec![],
             None,
+            None,
         )
         .await
         .unwrap();
 
     // EXECUTE
     executor
-        .execute("EXECUTE inst USING 1, 'Alice'", vec![], None)
+        .execute("EXECUTE inst USING 1, 'Alice'", vec![], None, None)
         .await
         .unwrap();
     executor
-        .execute("EXECUTE inst USING 2, 'Bob'", vec![], None)
+        .execute("EXECUTE inst USING 2, 'Bob'", vec![], None, None)
         .await
         .unwrap();
 
     let result = executor
-        .execute("SELECT COUNT(*) FROM users", vec![], None)
+        .execute("SELECT COUNT(*) FROM users", vec![], None, None)
         .await
         .unwrap();
     assert_eq!(result.rows[0][0], Value::Int(2));
@@ -150,19 +156,20 @@ async fn test_prepare_execute() {
             "PREPARE sel FROM 'SELECT name FROM users WHERE id = ?'",
             vec![],
             None,
+            None,
         )
         .await
         .unwrap();
 
     let result = executor
-        .execute("EXECUTE sel", vec![Value::Int(2)], None)
+        .execute("EXECUTE sel", vec![Value::Int(2)], None, None)
         .await
         .unwrap();
     assert_eq!(result.rows[0][0], Value::Text("Bob".to_string()));
 
     // DEALLOCATE
     executor
-        .execute("DEALLOCATE PREPARE inst", vec![], None)
+        .execute("DEALLOCATE PREPARE inst", vec![], None, None)
         .await
         .unwrap();
 }
@@ -173,11 +180,11 @@ async fn test_parameterized_update_delete() {
     let executor = Arc::new(Executor::new(db));
 
     executor
-        .execute("CREATE TABLE users (id INT, name TEXT)", vec![], None)
+        .execute("CREATE TABLE users (id INT, name TEXT)", vec![], None, None)
         .await
         .unwrap();
     executor
-        .execute("INSERT INTO users VALUES (1, 'Alice')", vec![], None)
+        .execute("INSERT INTO users VALUES (1, 'Alice')", vec![], None, None)
         .await
         .unwrap();
 
@@ -187,24 +194,25 @@ async fn test_parameterized_update_delete() {
             "UPDATE users SET name = ? WHERE id = $2",
             vec![Value::Text("Bob".to_string()), Value::Int(1)],
             None,
+            None,
         )
         .await
         .unwrap();
 
     let result = executor
-        .execute("SELECT name FROM users WHERE id = 1", vec![], None)
+        .execute("SELECT name FROM users WHERE id = 1", vec![], None, None)
         .await
         .unwrap();
     assert_eq!(result.rows[0][0], Value::Text("Bob".to_string()));
 
     // DELETE
     executor
-        .execute("DELETE FROM users WHERE id = ?", vec![Value::Int(1)], None)
+        .execute("DELETE FROM users WHERE id = ?", vec![Value::Int(1)], None, None)
         .await
         .unwrap();
 
     let result = executor
-        .execute("SELECT COUNT(*) FROM users", vec![], None)
+        .execute("SELECT COUNT(*) FROM users", vec![], None, None)
         .await
         .unwrap();
     assert_eq!(result.rows[0][0], Value::Int(0));

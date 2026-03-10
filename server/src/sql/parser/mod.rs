@@ -30,6 +30,10 @@ pub fn parse(sql: &str) -> SqlResult<SqlStmt> {
                 Rule::alter_table_stmt => ddl::parse_alter_table(inner),
                 Rule::drop_table_stmt => ddl::parse_drop_table(inner),
                 Rule::create_index_stmt => ddl::parse_create_index(inner),
+                Rule::create_user_stmt => dml::parse_create_user(inner),
+                Rule::drop_user_stmt => dml::parse_drop_user(inner),
+                Rule::grant_stmt => dml::parse_grant(inner),
+                Rule::revoke_stmt => dml::parse_revoke(inner),
                 Rule::explain_stmt => {
                     let inner_select = inner
                         .into_inner()

@@ -1,6 +1,6 @@
 use super::super::super::ast::{DeleteStmt, SqlStmt};
 use super::super::super::error::{SqlError, SqlResult};
-use super::super::super::parser::Rule;
+use crate::sql::parser::Rule;
 use super::super::expr::{parse_any_expression, parse_where_clause};
 
 pub fn parse_delete(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
@@ -11,7 +11,15 @@ pub fn parse_delete(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
 
     let table = inner
         .next()
-        .map(|p| p.as_str().trim().to_string())
+        .map(|p| {
+            let column_ref_rule = p.into_inner().next().unwrap();
+            column_ref_rule
+                .into_inner()
+                .filter(|pi| pi.as_rule() == Rule::path_identifier)
+                .map(|pi| pi.as_str().trim().to_string())
+                .collect::<Vec<_>>()
+                .join(".")
+        })
         .ok_or_else(|| SqlError::Parse("Missing table name in DELETE".to_string()))?;
 
     let mut where_clause = None;
@@ -34,7 +42,15 @@ pub fn parse_search(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
 
     let table = inner
         .next()
-        .map(|p| p.as_str().trim().to_string())
+        .map(|p| {
+            let column_ref_rule = p.into_inner().next().unwrap();
+            column_ref_rule
+                .into_inner()
+                .filter(|pi| pi.as_rule() == Rule::path_identifier)
+                .map(|pi| pi.as_str().trim().to_string())
+                .collect::<Vec<_>>()
+                .join(".")
+        })
         .ok_or_else(|| SqlError::Parse("Missing table name in SEARCH".to_string()))?;
 
     let query = inner

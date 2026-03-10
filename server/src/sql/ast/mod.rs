@@ -16,6 +16,10 @@ pub enum SqlStmt {
     AlterTable(AlterTableStmt),
     DropTable(DropTableStmt),
     CreateIndex(CreateIndexStmt),
+    CreateUser(CreateUserStmt),
+    DropUser(DropUserStmt),
+    Grant(GrantStmt),
+    Revoke(RevokeStmt),
     Select(SelectStmt),
     Insert(InsertStmt),
     Update(UpdateStmt),
@@ -45,6 +49,10 @@ impl SqlStmt {
             SqlStmt::CreateTable(_)
             | SqlStmt::AlterTable(_)
             | SqlStmt::DropTable(_)
+            | SqlStmt::CreateUser(_)
+            | SqlStmt::DropUser(_)
+            | SqlStmt::Grant(_)
+            | SqlStmt::Revoke(_)
             | SqlStmt::Search(_)
             | SqlStmt::Begin
             | SqlStmt::Commit

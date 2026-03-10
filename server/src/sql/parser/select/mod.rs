@@ -4,7 +4,7 @@ pub mod joins;
 
 use super::super::ast::{SelectStmt, SqlStmt};
 use super::super::error::{SqlError, SqlResult};
-use super::super::parser::Rule;
+use crate::sql::parser::Rule;
 use super::expr::parse_condition;
 pub use clauses::*;
 pub use columns::*;
@@ -54,9 +54,6 @@ pub fn parse_select_inner(pair: pest::iterators::Pair<Rule>) -> SqlResult<Select
         )));
     };
 
-    // Skip KW_SELECT
-    let _ = inner.next();
-
     let mut distinct = false;
     let mut columns = Vec::new();
     let mut table = String::new();
@@ -70,18 +67,28 @@ pub fn parse_select_inner(pair: pest::iterators::Pair<Rule>) -> SqlResult<Select
 
     for p in inner {
         match p.as_rule() {
+            Rule::KW_SELECT => {}
             Rule::distinct => distinct = true,
             Rule::select_columns => columns = parse_select_columns(p)?,
             Rule::from_clause => {
-                for from_p in p.into_inner() {
+                for from_p in p.clone().into_inner() {
                     match from_p.as_rule() {
+                        Rule::KW_FROM => {}
                         Rule::table_name_with_alias => {
                             let mut t_inner = from_p.into_inner();
-                            table = t_inner.next().unwrap().as_str().trim().to_string();
+                            let table_name_rule = t_inner.next().unwrap();
+                            let column_ref_rule = table_name_rule.into_inner().next().unwrap();
+                            table = column_ref_rule
+                                .into_inner()
+                                .filter(|p| p.as_rule() == Rule::path_identifier)
+                                .map(|p| p.as_str().trim().to_string())
+                                .collect::<Vec<_>>()
+                                .join(".");
                             if let Some(alias_pair) = t_inner.next() {
                                 table_alias = Some(parse_alias(alias_pair)?);
                             }
                         }
+
                         Rule::join_clause => joins.push(parse_join(from_p)?),
                         Rule::where_clause => {
                             where_clause =

@@ -12,7 +12,16 @@ pub async fn handle_connection(mut socket: TcpStream, executor: Arc<Executor>) -
     send_handshake(&mut socket).await?;
 
     // 2. Receive Handshake Response
-    let (_seq, _payload) = read_packet(&mut socket).await?;
+    let (_seq, payload) = read_packet(&mut socket).await?;
+    // Handshake response contains username at offset 32 (after capability flags, charset, reserved)
+    // It's a null-terminated string.
+    let username = if payload.len() > 32 {
+        let user_bytes: Vec<u8> = payload[32..].iter().take_while(|&&b| b != 0).cloned().collect();
+        String::from_utf8_lossy(&user_bytes).to_string()
+    } else {
+        "root".to_string()
+    };
+
     // For now, we accept any credentials (no auth)
     send_ok(&mut socket, 0).await?;
 
@@ -42,7 +51,7 @@ pub async fn handle_connection(mut socket: TcpStream, executor: Arc<Executor>) -
                         continue;
                     }
                 };
-                match executor.execute(query, vec![], None).await {
+                match executor.execute(query, vec![], None, Some(username.clone())).await {
                     Ok(result) => {
                         if result.rows.is_empty() {
                             send_ok(&mut socket, seq + 1).await?;

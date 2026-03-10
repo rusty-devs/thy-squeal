@@ -1,6 +1,6 @@
 use super::super::super::ast::{AlterAction, AlterTableStmt, SqlStmt};
 use super::super::super::error::{SqlError, SqlResult};
-use super::super::super::parser::Rule;
+use crate::sql::parser::Rule;
 use super::create::parse_column_def;
 
 pub fn parse_alter_table(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
@@ -9,10 +9,17 @@ pub fn parse_alter_table(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt
     let _ = inner.next();
     let _ = inner.next();
 
-    let table = inner
-        .next()
-        .map(|p| p.as_str().trim().to_string())
+    let table_pair = inner
+        .find(|p| p.as_rule() == Rule::table_name)
         .ok_or_else(|| SqlError::Parse("Missing table name in ALTER TABLE".to_string()))?;
+    
+    let column_ref_rule = table_pair.into_inner().next().unwrap();
+    let table = column_ref_rule
+        .into_inner()
+        .filter(|pi| pi.as_rule() == Rule::path_identifier)
+        .map(|pi| pi.as_str().trim().to_string())
+        .collect::<Vec<_>>()
+        .join(".");
 
     let action_pair = inner
         .next()
@@ -72,14 +79,20 @@ pub fn parse_alter_table(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt
             // Skip KW_RENAME, KW_TO
             let _ = action_inner.next();
             let _ = action_inner.next();
-            let new_name = action_inner
+            let table_pair = action_inner
                 .next()
                 .ok_or_else(|| {
                     SqlError::Parse("Missing new table name in RENAME TABLE".to_string())
-                })?
-                .as_str()
-                .trim()
-                .to_string();
+                })?;
+            
+            let column_ref_rule = table_pair.into_inner().next().unwrap();
+            let new_name = column_ref_rule
+                .into_inner()
+                .filter(|pi| pi.as_rule() == Rule::path_identifier)
+                .map(|pi| pi.as_str().trim().to_string())
+                .collect::<Vec<_>>()
+                .join(".");
+            
             AlterAction::RenameTable(new_name)
         }
         _ => return Err(SqlError::Parse("Unknown ALTER TABLE action".to_string())),

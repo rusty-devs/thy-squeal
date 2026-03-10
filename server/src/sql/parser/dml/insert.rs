@@ -1,6 +1,6 @@
 use super::super::super::ast::{Expression, InsertStmt, SqlStmt};
 use super::super::super::error::{SqlError, SqlResult};
-use super::super::super::parser::Rule;
+use crate::sql::parser::Rule;
 use super::super::expr::parse_any_expression;
 
 pub fn parse_insert(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
@@ -12,7 +12,17 @@ pub fn parse_insert(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
 
     for p in inner {
         match p.as_rule() {
-            Rule::table_name => table = Some(p.as_str().trim().to_string()),
+            Rule::table_name => {
+                let column_ref_rule = p.into_inner().next().unwrap();
+                table = Some(
+                    column_ref_rule
+                        .into_inner()
+                        .filter(|pi| pi.as_rule() == Rule::path_identifier)
+                        .map(|pi| pi.as_str().trim().to_string())
+                        .collect::<Vec<_>>()
+                        .join("."),
+                )
+            }
             Rule::column_list => {
                 let mut cols = Vec::new();
                 for col_pair in p.into_inner() {

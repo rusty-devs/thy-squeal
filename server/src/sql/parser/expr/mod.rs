@@ -4,7 +4,7 @@ pub mod literal;
 
 use super::super::ast::{BinaryOp, Expression, SqlStmt};
 use super::super::error::{SqlError, SqlResult};
-use super::Rule;
+use crate::sql::parser::Rule;
 
 pub use condition::{parse_condition, parse_where_clause};
 pub use functions::{parse_aggregate, parse_scalar_func};
@@ -104,20 +104,25 @@ pub fn parse_factor(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expression> 
     match first.as_rule() {
         Rule::aggregate_func => parse_aggregate(first),
         Rule::scalar_func => parse_scalar_func(first),
-        Rule::literal
-        | Rule::string_literal
-        | Rule::number_literal
-        | Rule::boolean_literal
+        Rule::literal 
+        | Rule::string_literal 
+        | Rule::number_literal 
+        | Rule::boolean_literal 
         | Rule::KW_NULL => Ok(Expression::Literal(parse_literal(first)?)),
         Rule::placeholder => parse_placeholder(first),
         Rule::column_ref => {
+            // If it matches KW_NULL exactly, it might be a mistake in rule precedence.
+            if first.as_str().to_uppercase() == "NULL" {
+                return Ok(Expression::Literal(crate::storage::Value::Null));
+            }
             let parts: Vec<String> = first
                 .into_inner()
-                .filter(|p| p.as_rule() == Rule::identifier)
+                .filter(|p| p.as_rule() == Rule::path_identifier)
                 .map(|p| p.as_str().trim().to_string())
                 .collect();
             Ok(Expression::Column(parts.join(".")))
         }
+
         Rule::select_stmt | Rule::select_stmt_inner => {
             let stmt = super::select::parse_select(first)?;
             if let SqlStmt::Select(s) = stmt {

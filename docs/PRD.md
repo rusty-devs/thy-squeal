@@ -143,8 +143,7 @@ thy-squeal/                          # Cargo workspace
 - [x] **Explain Plan**: Query execution transparency
 - [x] **SQL Dump/Restore**: Export/Import SQL scripts
 - [x] **MySQL Protocol Compatibility**: Native TCP support (Port 3306)
-
-### Phase 5: Compatibility & Ecosystem (v0.5) - 🏗 IN PROGRESS
+### Phase 5: Compatibility & Ecosystem (v0.5) - ✅ COMPLETE
 - [x] Parameterized Queries (Prepared statements)
 - [x] Client CLI (Clap)
 - [x] REPL with history and HTTP execution
@@ -153,7 +152,9 @@ thy-squeal/                          # Cargo workspace
 - [x] **AUTO_INCREMENT**: Automated ID generation
 - [x] **CTEs**: Common Table Expressions (WITH clause)
 - [x] **Materialized Views**: Automatically refreshing pre-calculated query results
+- [x] **User Authentication & RBAC**: Secure access control
 - [ ] JavaScript REPL (QuickJS)
+
 
 ### Phase 6: Production (v1.0)
 - [ ] Authentication & Role-Based Access Control (RBAC)

@@ -1,7 +1,7 @@
 // thy-squeal SQL Grammar
 
 // Main statement
-statement = { SOI ~ (explain_stmt | search_stmt | select_stmt | insert_stmt | update_stmt | delete_stmt | create_table_stmt | create_materialized_view_stmt | alter_table_stmt | drop_table_stmt | create_index_stmt | begin_stmt | commit_stmt | rollback_stmt | prepare_stmt | execute_stmt | deallocate_stmt) ~ ";"? ~ EOI }
+statement = { SOI ~ (explain_stmt | search_stmt | select_stmt | insert_stmt | update_stmt | delete_stmt | create_table_stmt | create_materialized_view_stmt | alter_table_stmt | drop_table_stmt | create_index_stmt | create_user_stmt | drop_user_stmt | grant_stmt | revoke_stmt | begin_stmt | commit_stmt | rollback_stmt | prepare_stmt | execute_stmt | deallocate_stmt) ~ ";"? ~ EOI }
 
 explain_stmt = { KW_EXPLAIN ~ select_stmt_inner }
 
@@ -56,6 +56,14 @@ delete_stmt = { KW_DELETE ~ KW_FROM ~ table_name ~ where_clause? }
 create_table_stmt = { KW_CREATE ~ KW_TABLE ~ table_name ~ "(" ~ create_definitions ~ ")" }
 
 create_materialized_view_stmt = { KW_CREATE ~ KW_MATERIALIZED ~ KW_VIEW ~ identifier ~ KW_AS ~ select_stmt_inner }
+
+create_user_stmt = { KW_CREATE ~ KW_USER ~ string_literal ~ KW_IDENTIFIED ~ KW_BY ~ string_literal }
+drop_user_stmt = { KW_DROP ~ KW_USER ~ string_literal }
+grant_stmt = { KW_GRANT ~ privilege_list ~ KW_ON ~ (KW_ALL ~ KW_PRIVILEGES | table_name) ~ KW_TO ~ string_literal }
+revoke_stmt = { KW_REVOKE ~ privilege_list ~ KW_ON ~ (KW_ALL ~ KW_PRIVILEGES | table_name) ~ KW_FROM ~ string_literal }
+
+privilege_list = { privilege ~ ("," ~ privilege)* }
+privilege = { KW_SELECT | KW_INSERT | KW_UPDATE | KW_DELETE | KW_CREATE | KW_DROP | KW_GRANT | KW_ALL }
 
 create_definitions = { create_definition ~ ("," ~ create_definition)* }
 create_definition = { column_def | primary_key_def | foreign_key_def }
@@ -144,10 +152,12 @@ boolean_literal = { KW_TRUE | KW_FALSE }
 
 placeholder = { "?" | ("$" ~ ASCII_DIGIT+) }
 
-column_ref = { identifier ~ ("." ~ identifier)* }
+column_ref = { path_identifier ~ ("." ~ path_identifier)* }
 
-// Identifiers
-identifier = @{ !keyword ~ (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_")* }
+path_identifier = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHA | ASCII_DIGIT | "_")* }
+
+// Identifiers (regular ones exclude keywords)
+identifier = @{ !keyword ~ path_identifier }
 table_name = { column_ref }
 
 keyword = {
@@ -157,7 +167,7 @@ keyword = {
     KW_COUNT | KW_SUM | KW_AVG | KW_MIN | KW_MAX | KW_IN | KW_BEGIN | KW_COMMIT | KW_ROLLBACK | KW_START | KW_TRANSACTION |
     KW_PREPARE | KW_EXECUTE | KW_DEALLOCATE | KW_USING | KW_AUTO_INCREMENT | KW_PRIMARY | KW_KEY |
     KW_ALTER | KW_ADD | KW_COLUMN | KW_RENAME | KW_TO | KW_FOREIGN | KW_REFERENCES | KW_WITH |
-    KW_MATERIALIZED | KW_VIEW
+    KW_MATERIALIZED | KW_VIEW | KW_USER | KW_IDENTIFIED | KW_PRIVILEGES | KW_REVOKE | KW_ALL
 }
 
 // Keywords (reserved)
@@ -215,6 +225,7 @@ KW_USING    = @{ ^"USING" ~ !id_char }
 KW_AUTO_INCREMENT = @{ ^"AUTO_INCREMENT" ~ !id_char }
 KW_PRIMARY  = @{ ^"PRIMARY" ~ !id_char }
 KW_KEY      = @{ ^"KEY" ~ !id_char }
+KW_GRANT    = @{ ^"GRANT" ~ !id_char }
 KW_FOREIGN  = @{ ^"FOREIGN" ~ !id_char }
 KW_REFERENCES = @{ ^"REFERENCES" ~ !id_char }
 KW_ALTER    = @{ ^"ALTER" ~ !id_char }
@@ -225,6 +236,11 @@ KW_TO       = @{ ^"TO" ~ !id_char }
 KW_WITH     = @{ ^"WITH" ~ !id_char }
 KW_MATERIALIZED = @{ ^"MATERIALIZED" ~ !id_char }
 KW_VIEW     = @{ ^"VIEW" ~ !id_char }
+KW_USER     = @{ ^"USER" ~ !id_char }
+KW_IDENTIFIED = @{ ^"IDENTIFIED" ~ !id_char }
+KW_PRIVILEGES = @{ ^"PRIVILEGES" ~ !id_char }
+KW_REVOKE   = @{ ^"REVOKE" ~ !id_char }
+KW_ALL      = @{ ^"ALL" ~ !id_char }
 
 id_char = _{ ASCII_ALPHA | ASCII_DIGIT | "_" }
 

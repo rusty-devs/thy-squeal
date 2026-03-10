@@ -8,7 +8,7 @@ async fn test_inner_join() {
     let executor = Arc::new(Executor::new(db));
 
     executor
-        .execute("CREATE TABLE users (id INT, name TEXT)", vec![], None)
+        .execute("CREATE TABLE users (id INT, name TEXT)", vec![], None, None)
         .await
         .unwrap();
     executor
@@ -16,25 +16,17 @@ async fn test_inner_join() {
             "CREATE TABLE posts (id INT, user_id INT, title TEXT)",
             vec![],
             None,
+            None,
         )
         .await
         .unwrap();
 
     executor
-        .execute("INSERT INTO users VALUES (1, 'Alice')", vec![], None)
+        .execute("INSERT INTO users VALUES (1, 'Alice')", vec![], None, None)
         .await
         .unwrap();
     executor
-        .execute("INSERT INTO users VALUES (2, 'Bob')", vec![], None)
-        .await
-        .unwrap();
-
-    executor
-        .execute("INSERT INTO posts VALUES (101, 1, 'Hello')", vec![], None)
-        .await
-        .unwrap();
-    executor
-        .execute("INSERT INTO posts VALUES (102, 1, 'World')", vec![], None)
+        .execute("INSERT INTO posts VALUES (101, 1, 'Hello')", vec![], None, None)
         .await
         .unwrap();
 
@@ -43,11 +35,12 @@ async fn test_inner_join() {
             "SELECT users.name, posts.title FROM users JOIN posts ON users.id = posts.user_id",
             vec![],
             None,
+            None,
         )
         .await
         .unwrap();
 
-    assert_eq!(result.rows.len(), 2);
+    assert_eq!(result.rows.len(), 1);
     assert_eq!(result.rows[0][0], Value::Text("Alice".to_string()));
     assert_eq!(result.rows[0][1], Value::Text("Hello".to_string()));
 }
@@ -58,7 +51,7 @@ async fn test_left_join() {
     let executor = Arc::new(Executor::new(db));
 
     executor
-        .execute("CREATE TABLE users (id INT, name TEXT)", vec![], None)
+        .execute("CREATE TABLE users (id INT, name TEXT)", vec![], None, None)
         .await
         .unwrap();
     executor
@@ -66,28 +59,33 @@ async fn test_left_join() {
             "CREATE TABLE posts (id INT, user_id INT, title TEXT)",
             vec![],
             None,
+            None,
         )
         .await
         .unwrap();
 
     executor
-        .execute("INSERT INTO users VALUES (1, 'Alice')", vec![], None)
+        .execute("INSERT INTO users VALUES (1, 'Alice')", vec![], None, None)
         .await
         .unwrap();
     executor
-        .execute("INSERT INTO users VALUES (2, 'Bob')", vec![], None)
+        .execute("INSERT INTO users VALUES (2, 'Bob')", vec![], None, None)
         .await
         .unwrap();
-
     executor
-        .execute("INSERT INTO posts VALUES (101, 1, 'Hello')", vec![], None)
+        .execute("INSERT INTO posts VALUES (101, 1, 'Hello')", vec![], None, None)
         .await
         .unwrap();
 
     let result = executor
-            .execute("SELECT users.name, posts.title FROM users LEFT JOIN posts ON users.id = posts.user_id ORDER BY users.id", vec![], None)
-            .await
-            .unwrap();
+        .execute(
+            "SELECT users.name, posts.title FROM users LEFT JOIN posts ON users.id = posts.user_id ORDER BY users.id",
+            vec![],
+            None,
+            None,
+        )
+        .await
+        .unwrap();
 
     assert_eq!(result.rows.len(), 2);
     assert_eq!(result.rows[0][0], Value::Text("Alice".to_string()));

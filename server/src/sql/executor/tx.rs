@@ -15,7 +15,8 @@ impl Executor {
             f(state_ref.value_mut())
         } else {
             let mut db = self.db.write().await;
-            let res = f(db.state_mut())?;
+            let state = db.state_mut();
+            let res = f(state)?;
             db.save().map_err(|e| SqlError::Storage(e.to_string()))?;
             Ok(res)
         }

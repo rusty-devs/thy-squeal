@@ -9,11 +9,33 @@ use crate::sql::eval::Evaluator;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub enum Privilege {
+    Select,
+    Insert,
+    Update,
+    Delete,
+    Create,
+    Drop,
+    Grant,
+    All,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct User {
+    pub username: String,
+    pub password_hash: String,
+    pub global_privileges: Vec<Privilege>,
+    pub table_privileges: HashMap<String, Vec<Privilege>>, // table_name -> privileges
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct DatabaseState {
     pub tables: HashMap<String, Table>,
     #[serde(default)]
     pub materialized_views: HashMap<String, crate::sql::ast::SelectStmt>,
+    #[serde(default)]
+    pub users: HashMap<String, User>,
 }
 
 impl DatabaseState {
@@ -38,11 +60,13 @@ pub struct Database {
 
 impl Database {
     pub fn new() -> Self {
-        Self {
+        let mut db = Self {
             state: DatabaseState::default(),
             persister: None,
             _data_dir: None,
-        }
+        };
+        db.ensure_root_user();
+        db
     }
 
     pub fn with_persister(
@@ -54,6 +78,7 @@ impl Database {
             state: DatabaseState {
                 tables,
                 materialized_views: HashMap::new(),
+                users: HashMap::new(),
             },
             persister: Some(persister),
             _data_dir: Some(data_dir.clone()),
@@ -61,6 +86,8 @@ impl Database {
 
         // Replay WAL logs
         db.replay_logs()?;
+
+        db.ensure_root_user();
 
         // Initialize search indices for each table (after WAL replay)
         for (name, table) in &mut db.state.tables {
@@ -71,6 +98,21 @@ impl Database {
         }
 
         Ok(db)
+    }
+
+    fn ensure_root_user(&mut self) {
+        if !self.state.users.contains_key("root") {
+            let hashed = bcrypt::hash("root", bcrypt::DEFAULT_COST).unwrap();
+            self.state.users.insert(
+                "root".to_string(),
+                User {
+                    username: "root".to_string(),
+                    password_hash: hashed,
+                    global_privileges: vec![Privilege::All],
+                    table_privileges: HashMap::new(),
+                },
+            );
+        }
     }
 
     fn replay_logs(&mut self) -> Result<(), StorageError> {

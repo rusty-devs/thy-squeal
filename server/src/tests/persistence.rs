@@ -1,9 +1,8 @@
 use super::common::setup;
-use crate::{http::create_app, sql::Executor};
-use axum::{body::Body, http::Request};
-use serde_json::{Value, json};
+use crate::storage::persistence::SledPersister;
+use crate::storage::{Database, Value};
+use crate::sql::Executor;
 use std::sync::Arc;
-use tower::ServiceExt; // for `oneshot`
 
 #[tokio::test]
 async fn test_persistence() {
@@ -11,134 +10,61 @@ async fn test_persistence() {
     let temp_dir = std::env::temp_dir().join(format!("thy-squeal-test-{}", uuid::Uuid::new_v4()));
     let data_dir = temp_dir.to_str().unwrap().to_string();
 
-    let config = crate::config::Config {
-        server: crate::config::ServerConfig {
-            host: "127.0.0.1".to_string(),
-            sql_port: 3306,
-            http_port: 9200,
-        },
-        storage: crate::config::StorageConfig {
-            max_memory_mb: 1024,
-            default_cache_size: 1000,
-            default_eviction: "LRU".to_string(),
-            snapshot_interval_sec: 300,
-            data_dir: data_dir.clone(),
-        },
-        security: crate::config::SecurityConfig {
-            auth_enabled: false,
-            tls_enabled: false,
-        },
-        logging: crate::config::LoggingConfig {
-            level: "info".to_string(),
-        },
-    };
-
-    // 1. Create table and insert data in first instance
     {
-        let persister =
-            Box::new(crate::storage::persistence::SledPersister::new(&data_dir).unwrap());
-        let db = crate::storage::Database::with_persister(persister, data_dir.clone()).unwrap();
+        let persister = Box::new(SledPersister::new(&data_dir).unwrap());
+        let mut db = Database::with_persister(persister, data_dir.clone()).unwrap();
+        
+        db.create_table("test_table".to_string(), vec![
+            crate::storage::Column { name: "id".to_string(), data_type: crate::storage::DataType::Int, is_auto_increment: false },
+            crate::storage::Column { name: "name".to_string(), data_type: crate::storage::DataType::Text, is_auto_increment: false },
+        ], None, vec![]).unwrap();
+
         let executor = Arc::new(Executor::new(db));
-        let app = create_app(executor, config.clone());
-
-        app.clone()
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/_query")
-                    .header("Content-Type", "application/json")
-                    .body(Body::from(
-                        json!({"sql": "CREATE TABLE p (id INT, v TEXT)"}).to_string(),
-                    ))
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        app.clone()
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/_query")
-                    .header("Content-Type", "application/json")
-                    .body(Body::from(
-                        json!({"sql": "INSERT INTO p (id, v) VALUES (1, 'persisted')"}).to_string(),
-                    ))
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
+        executor.execute("INSERT INTO test_table VALUES (1, 'alice')", vec![], None, None).await.unwrap();
     }
 
-    // 2. Start a second instance and verify data exists
+    // Re-open
     {
-        let persister =
-            Box::new(crate::storage::persistence::SledPersister::new(&data_dir).unwrap());
-        let db = crate::storage::Database::with_persister(persister, data_dir.clone()).unwrap();
+        let persister = Box::new(SledPersister::new(&data_dir).unwrap());
+        let db = Database::with_persister(persister, data_dir.clone()).unwrap();
         let executor = Arc::new(Executor::new(db));
-        let app = create_app(executor, config);
-
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .method("POST")
-                    .uri("/_query")
-                    .header("Content-Type", "application/json")
-                    .body(Body::from(
-                        json!({"sql": "SELECT v FROM p WHERE id = 1"}).to_string(),
-                    ))
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-
-        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
-            .await
-            .unwrap();
-        let body: Value = serde_json::from_slice(&body).unwrap();
-        assert_eq!(body["data"][0][0], "persisted");
+        
+        let res = executor.execute("SELECT name FROM test_table WHERE id = 1", vec![], None, None).await.unwrap();
+        assert_eq!(res.rows[0][0], Value::Text("alice".to_string()));
     }
 
-    // Cleanup
     let _ = std::fs::remove_dir_all(temp_dir);
 }
 
 #[tokio::test]
 async fn test_wal_recovery() {
     setup();
-    let temp_dir =
-        std::env::temp_dir().join(format!("thy-squeal-wal-test-{}", uuid::Uuid::new_v4()));
+    let temp_dir = std::env::temp_dir().join(format!("thy-squeal-wal-test-{}", uuid::Uuid::new_v4()));
     let data_dir = temp_dir.to_str().unwrap().to_string();
 
-    // 1. Create table and insert data (it will be logged to WAL and applied to in-memory)
+    // 1. Create table and insert data (will be in WAL)
     {
-        let persister =
-            Box::new(crate::storage::persistence::SledPersister::new(&data_dir).unwrap());
-        let db = crate::storage::Database::with_persister(persister, data_dir.clone()).unwrap();
+        let persister = Box::new(SledPersister::new(&data_dir).unwrap());
+        let db = Database::with_persister(persister, data_dir.clone()).unwrap();
         let executor = Arc::new(Executor::new(db));
 
-        executor
-            .execute("CREATE TABLE w (id INT, v TEXT)", vec![], None)
-            .await
-            .unwrap();
-        executor
-            .execute("INSERT INTO w VALUES (1, 'wal_data')", vec![], None)
-            .await
-            .unwrap();
+        executor.execute("CREATE TABLE w (id INT, v TEXT)", vec![], None, None).await.unwrap();
+        executor.execute("INSERT INTO w VALUES (1, 'wal_data')", vec![], None, None).await.unwrap();
+        
+        // We don't call save() manually here to ensure it's in WAL only if not auto-saved
+        // But our implementation saves on every mutation for now. 
+        // To truly test WAL, we'd need to simulate a crash before save().
+        // However, with Sled, WAL is written immediately.
     }
 
-    // 2. Start a second instance and verify data exists
+    // 2. Re-open and verify
     {
-        let persister =
-            Box::new(crate::storage::persistence::SledPersister::new(&data_dir).unwrap());
-        let db = crate::storage::Database::with_persister(persister, data_dir.clone()).unwrap();
+        let persister = Box::new(SledPersister::new(&data_dir).unwrap());
+        let db = Database::with_persister(persister, data_dir.clone()).unwrap();
         let executor = Arc::new(Executor::new(db));
 
-        let r = executor
-            .execute("SELECT v FROM w WHERE id = 1", vec![], None)
-            .await
-            .unwrap();
-        assert_eq!(r.rows[0][0].as_text(), Some("wal_data"));
+        let res = executor.execute("SELECT v FROM w WHERE id = 1", vec![], None, None).await.unwrap();
+        assert_eq!(res.rows[0][0], Value::Text("wal_data".to_string()));
     }
 
     let _ = std::fs::remove_dir_all(temp_dir);

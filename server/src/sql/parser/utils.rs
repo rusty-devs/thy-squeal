@@ -1,5 +1,5 @@
 use super::super::error::{SqlError, SqlResult};
-use super::super::parser::Rule;
+use crate::sql::parser::Rule;
 
 pub fn expect_identifier(
     pair: Option<pest::iterators::Pair<Rule>>,

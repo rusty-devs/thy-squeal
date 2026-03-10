@@ -2,8 +2,8 @@ use super::super::super::ast::{
     AggregateType, Expression, FunctionCall, ScalarFuncType, ScalarFunction,
 };
 use super::super::super::error::{SqlError, SqlResult};
-use super::super::Rule;
-use super::parse_expression;
+use crate::sql::parser::Rule;
+use super::parse_any_expression;
 
 pub fn parse_aggregate(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expression> {
     let mut inner = pair.into_inner();
@@ -18,7 +18,7 @@ pub fn parse_aggregate(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expressio
         .ok_or_else(|| SqlError::Parse("Missing aggregate argument".to_string()))?;
     match arg_pair.as_rule() {
         Rule::star => args.push(Expression::Star),
-        Rule::expression => args.push(parse_expression(arg_pair)?),
+        Rule::expression => args.push(parse_any_expression(arg_pair)?),
         _ => {
             if arg_pair.as_str() == "*" {
                 args.push(Expression::Star);
@@ -64,8 +64,17 @@ pub fn parse_scalar_func(pair: pest::iterators::Pair<Rule>) -> SqlResult<Express
 
     let mut args = Vec::new();
     for arg_pair in inner {
-        if arg_pair.as_rule() == Rule::expression {
-            args.push(parse_expression(arg_pair)?);
+        match arg_pair.as_rule() {
+            Rule::KW_NULL => args.push(Expression::Literal(crate::storage::Value::Null)),
+            Rule::expression
+            | Rule::literal
+            | Rule::string_literal
+            | Rule::number_literal
+            | Rule::boolean_literal
+            | Rule::placeholder => {
+                args.push(parse_any_expression(arg_pair)?);
+            }
+            _ => {}
         }
     }
 

@@ -59,6 +59,6 @@
 - [x] **Information Schema Expansion**: `statistics`, `key_column_usage`, `schemata` tables
 - [x] Secondary Index optimization (using index only if selective)
 - [x] Materialized Views
-- [ ] User Authentication & RBAC
+- [x] User Authentication & RBAC
 - [ ] Distributed Mode (Raft consensus)
 - [ ] JavaScript Query Interface (QuickJS)

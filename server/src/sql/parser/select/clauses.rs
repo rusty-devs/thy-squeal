@@ -1,6 +1,6 @@
 use super::super::super::ast::{Expression, LimitClause, Order, OrderByItem};
 use super::super::super::error::SqlResult;
-use super::super::super::parser::Rule;
+use crate::sql::parser::Rule;
 use super::super::expr::parse_expression;
 
 pub fn parse_group_by(pair: pest::iterators::Pair<Rule>) -> SqlResult<Vec<Expression>> {
