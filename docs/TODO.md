@@ -39,7 +39,7 @@
 - [x] Information Schema (tables, columns metadata)
 - [x] SQL Dump/Restore (.sql script export)
 - [ ] MySQL Protocol Compatibility (TCP 3306)
-- [ ] Parameterized Queries (Prepared Statements)
+- [x] Parameterized Queries (Prepared Statements)
 
 ## Code Quality & Refactoring - ✅ COMPLETE
 - [x] Decompose `eval.rs` (Expression vs Condition logic)

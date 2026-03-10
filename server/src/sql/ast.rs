@@ -13,6 +13,9 @@ pub enum SqlStmt {
     Delete(DeleteStmt),
     Explain(SelectStmt),
     Search(SearchStmt),
+    Prepare(PrepareStmt),
+    Execute(ExecuteStmt),
+    Deallocate(String),
     Begin,
     Commit,
     Rollback,
@@ -27,10 +30,23 @@ impl SqlStmt {
             SqlStmt::Delete(d) => d.resolve_placeholders(&mut counter),
             SqlStmt::Explain(s) => s.resolve_placeholders(&mut counter),
             SqlStmt::CreateIndex(ci) => ci.resolve_placeholders(&mut counter),
+            SqlStmt::Insert(i) => i.resolve_placeholders(&mut counter),
             // No placeholders in these statements
-            SqlStmt::CreateTable(_) | SqlStmt::DropTable(_) | SqlStmt::Insert(_) | SqlStmt::Search(_) | SqlStmt::Begin | SqlStmt::Commit | SqlStmt::Rollback => {}
+            SqlStmt::CreateTable(_) | SqlStmt::DropTable(_) | SqlStmt::Search(_) | SqlStmt::Begin | SqlStmt::Commit | SqlStmt::Rollback | SqlStmt::Prepare(_) | SqlStmt::Execute(_) | SqlStmt::Deallocate(_) => {}
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PrepareStmt {
+    pub name: String,
+    pub sql: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ExecuteStmt {
+    pub name: String,
+    pub params: Vec<Expression>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -383,5 +399,14 @@ pub struct SelectColumn {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct InsertStmt {
     pub table: String,
-    pub values: Vec<Value>,
+    pub columns: Option<Vec<String>>,
+    pub values: Vec<Expression>,
+}
+
+impl InsertStmt {
+    pub fn resolve_placeholders(&mut self, counter: &mut usize) {
+        for expr in &mut self.values {
+            expr.resolve_placeholders(counter);
+        }
+    }
 }

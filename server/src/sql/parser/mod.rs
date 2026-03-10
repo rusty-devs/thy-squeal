@@ -42,6 +42,9 @@ pub fn parse(sql: &str) -> SqlResult<SqlStmt> {
                     }
                 }
                 Rule::search_stmt => dml::parse_search(inner),
+                Rule::prepare_stmt => dml::parse_prepare(inner),
+                Rule::execute_stmt => dml::parse_execute(inner),
+                Rule::deallocate_stmt => dml::parse_deallocate(inner),
                 Rule::begin_stmt => Ok(SqlStmt::Begin),
                 Rule::commit_stmt => Ok(SqlStmt::Commit),
                 Rule::rollback_stmt => Ok(SqlStmt::Rollback),

@@ -10,13 +10,30 @@ pub use condition::{parse_condition, parse_where_clause};
 pub use functions::{parse_aggregate, parse_scalar_func};
 pub use literal::parse_literal;
 
+pub fn parse_any_expression(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expression> {
+    match pair.as_rule() {
+        Rule::expression => parse_expression(pair),
+        Rule::term => parse_term(pair),
+        Rule::factor => parse_factor(pair),
+        Rule::literal 
+        | Rule::string_literal 
+        | Rule::number_literal 
+        | Rule::boolean_literal 
+        | Rule::KW_NULL => Ok(Expression::Literal(parse_literal(pair)?)),
+        Rule::placeholder => parse_placeholder(pair),
+        Rule::aggregate_func => parse_aggregate(pair),
+        Rule::scalar_func => parse_scalar_func(pair),
+        _ => Err(SqlError::Parse(format!("Unexpected rule for expression: {:?}", pair.as_rule()))),
+    }
+}
+
 pub fn parse_expression(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expression> {
     let mut inner = pair.into_inner();
     let first = inner
         .next()
-        .ok_or_else(|| SqlError::Parse("Empty expression".to_string()))?;
+        .ok_or_else(|| SqlError::Parse("Empty expression/term".to_string()))?;
 
-    let mut left = parse_term(first)?;
+    let mut left = parse_any_expression(first)?;
 
     while let Some(op_pair) = inner.next() {
         let op_str = op_pair.as_str().trim();
@@ -44,9 +61,9 @@ pub fn parse_term(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expression> {
     let mut inner = pair.into_inner();
     let first = inner
         .next()
-        .ok_or_else(|| SqlError::Parse("Empty term".to_string()))?;
+        .ok_or_else(|| SqlError::Parse("Empty expression/term".to_string()))?;
 
-    let mut left = parse_factor(first)?;
+    let mut left = parse_any_expression(first)?;
 
     while let Some(op_pair) = inner.next() {
         let op_str = op_pair.as_str().trim();
@@ -82,7 +99,11 @@ pub fn parse_factor(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expression> 
     match first.as_rule() {
         Rule::aggregate_func => parse_aggregate(first),
         Rule::scalar_func => parse_scalar_func(first),
-        Rule::literal => Ok(Expression::Literal(parse_literal(first)?)),
+        Rule::literal 
+        | Rule::string_literal 
+        | Rule::number_literal 
+        | Rule::boolean_literal 
+        | Rule::KW_NULL => Ok(Expression::Literal(parse_literal(first)?)),
         Rule::placeholder => parse_placeholder(first),
         Rule::column_ref => {
             let parts: Vec<String> = first
@@ -102,7 +123,7 @@ pub fn parse_factor(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expression> 
                 ))
             }
         }
-        Rule::expression => parse_expression(first),
+        Rule::expression => parse_any_expression(first),
         Rule::KW_NOT => {
             let next_factor = inner.next().ok_or_else(|| SqlError::Parse("Missing factor after NOT".to_string()))?;
             let _ = parse_factor(next_factor)?;
