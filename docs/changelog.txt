@@ -2,8 +2,8 @@
 
 ## [v0.5.0] - 2026-03-10
 ### Added
-- **Materialized Views**: Support for `CREATE MATERIALIZED VIEW` with automatic data refresh on underlying table mutations (Insert/Update/Delete).
-- **Information Schema Expansion**: Added `statistics`, `key_column_usage`, and `schemata` tables for improved metadata discoverability.
+- **Materialized Views**: Support for `CREATE MATERIALIZED VIEW` with automatic background data refresh on underlying table mutations (`INSERT`, `UPDATE`, `DELETE`).
+- **Information Schema Expansion**: Added `statistics`, `key_column_usage`, and `schemata` tables for improved metadata discoverability and tool compatibility.
 - **CTEs (WITH clause)**: Support for non-recursive Common Table Expressions.
 - **Constraints**: Support for `PRIMARY KEY` and `FOREIGN KEY` (Referential Integrity). Automatic unique index creation for PKs.
 - **Standard SQL Functions**: Added variadic function support and implemented `CONCAT`, `COALESCE`, `NOW`, and `REPLACE`.

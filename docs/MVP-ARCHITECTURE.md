@@ -84,4 +84,5 @@ server/src/
 | Parameterized Queries | ✅ Done | Prevention of SQL injection and query reuse |
 | AUTO_INCREMENT | ✅ Done | Automated ID generation for integer columns |
 | ALTER TABLE | ✅ Done | Non-destructive schema evolution |
+| Materialized Views | ✅ Done | Pre-calculated query results with auto-refresh |
 | Query Optimization | 🏗 Todo | Cost-based optimizer for join ordering |
