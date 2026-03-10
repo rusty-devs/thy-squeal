@@ -1,18 +1,14 @@
+use super::common::setup;
 use crate::{http::create_app, sql::Executor};
-use axum::{
-    body::Body,
-    http::Request,
-};
+use axum::{body::Body, http::Request};
 use serde_json::{Value, json};
 use std::sync::Arc;
 use tower::ServiceExt; // for `oneshot`
-use super::common::setup;
 
 #[tokio::test]
 async fn test_persistence() {
     setup();
-    let temp_dir =
-        std::env::temp_dir().join(format!("thy-squeal-test-{}", uuid::Uuid::new_v4()));
+    let temp_dir = std::env::temp_dir().join(format!("thy-squeal-test-{}", uuid::Uuid::new_v4()));
     let data_dir = temp_dir.to_str().unwrap().to_string();
 
     let config = crate::config::Config {
@@ -66,8 +62,7 @@ async fn test_persistence() {
                     .uri("/_query")
                     .header("Content-Type", "application/json")
                     .body(Body::from(
-                        json!({"sql": "INSERT INTO p (id, v) VALUES (1, 'persisted')"})
-                            .to_string(),
+                        json!({"sql": "INSERT INTO p (id, v) VALUES (1, 'persisted')"}).to_string(),
                     ))
                     .unwrap(),
             )
@@ -119,8 +114,7 @@ async fn test_wal_recovery() {
     {
         let persister =
             Box::new(crate::storage::persistence::SledPersister::new(&data_dir).unwrap());
-        let db =
-            crate::storage::Database::with_persister(persister, data_dir.clone()).unwrap();
+        let db = crate::storage::Database::with_persister(persister, data_dir.clone()).unwrap();
         let executor = Arc::new(Executor::new(db));
 
         executor

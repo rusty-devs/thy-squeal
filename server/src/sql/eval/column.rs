@@ -1,5 +1,5 @@
-use crate::storage::{Row, Table, Value};
 use super::super::error::{SqlError, SqlResult};
+use crate::storage::{Row, Table, Value};
 
 pub fn resolve_column(name: &str, contexts: &[(&Table, Option<&str>, &Row)]) -> SqlResult<Value> {
     if name.contains('.') {
@@ -11,7 +11,7 @@ pub fn resolve_column(name: &str, contexts: &[(&Table, Option<&str>, &Row)]) -> 
                 Some(a) => *a == parts[0],
                 None => table.name == parts[0],
             };
-            
+
             if matches_table && let Some(idx) = table.column_index(parts[1]) {
                 let mut current_val = row.values.get(idx).cloned().ok_or_else(|| {
                     SqlError::Runtime(format!("Value not found for column index: {}", idx))

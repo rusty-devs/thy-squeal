@@ -1,6 +1,6 @@
 use crate::sql::ast::{Condition, Expression};
-use crate::storage::value::Value;
 use crate::storage::error::StorageError;
+use crate::storage::value::Value;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 
@@ -8,7 +8,7 @@ use std::collections::{BTreeMap, HashMap};
 pub enum TableIndex {
     BTree {
         unique: bool,
-        expressions: Vec<serde_json::Value>,    // Serialized Expressions
+        expressions: Vec<serde_json::Value>, // Serialized Expressions
         where_clause: Option<serde_json::Value>, // Serialized Condition
         data: BTreeMap<Vec<Value>, Vec<String>>,
     },

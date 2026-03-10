@@ -9,7 +9,11 @@ async fn test_auto_increment() {
 
     // Test with AUTO_INCREMENT keyword
     executor
-        .execute("CREATE TABLE users (id INT AUTO_INCREMENT, name TEXT)", vec![], None)
+        .execute(
+            "CREATE TABLE users (id INT AUTO_INCREMENT, name TEXT)",
+            vec![],
+            None,
+        )
         .await
         .unwrap();
 
@@ -23,7 +27,10 @@ async fn test_auto_increment() {
         .await
         .unwrap();
 
-    let result = executor.execute("SELECT * FROM users ORDER BY id", vec![], None).await.unwrap();
+    let result = executor
+        .execute("SELECT * FROM users ORDER BY id", vec![], None)
+        .await
+        .unwrap();
     assert_eq!(result.rows.len(), 2);
     assert_eq!(result.rows[0][0], Value::Int(1));
     assert_eq!(result.rows[0][1], Value::Text("Alice".to_string()));
@@ -35,8 +42,11 @@ async fn test_auto_increment() {
         .execute("INSERT INTO users VALUES (NULL, 'Charlie')", vec![], None)
         .await
         .unwrap();
-    
-    let result = executor.execute("SELECT * FROM users WHERE name = 'Charlie'", vec![], None).await.unwrap();
+
+    let result = executor
+        .execute("SELECT * FROM users WHERE name = 'Charlie'", vec![], None)
+        .await
+        .unwrap();
     assert_eq!(result.rows[0][0], Value::Int(3));
 }
 
@@ -56,7 +66,10 @@ async fn test_serial_shorthand() {
         .await
         .unwrap();
 
-    let result = executor.execute("SELECT id FROM tasks", vec![], None).await.unwrap();
+    let result = executor
+        .execute("SELECT id FROM tasks", vec![], None)
+        .await
+        .unwrap();
     assert_eq!(result.rows[0][0], Value::Int(1));
 }
 
@@ -79,20 +92,36 @@ async fn test_alter_table() {
         .execute("ALTER TABLE users ADD COLUMN age INT", vec![], None)
         .await
         .unwrap();
-    
-    let result = executor.execute("SELECT age FROM users", vec![], None).await.unwrap();
+
+    let result = executor
+        .execute("SELECT age FROM users", vec![], None)
+        .await
+        .unwrap();
     assert_eq!(result.rows[0][0], Value::Null); // Existing rows get NULL
 
-    executor.execute("UPDATE users SET age = 30 WHERE id = 1", vec![], None).await.unwrap();
-    let result = executor.execute("SELECT age FROM users", vec![], None).await.unwrap();
+    executor
+        .execute("UPDATE users SET age = 30 WHERE id = 1", vec![], None)
+        .await
+        .unwrap();
+    let result = executor
+        .execute("SELECT age FROM users", vec![], None)
+        .await
+        .unwrap();
     assert_eq!(result.rows[0][0], Value::Int(30));
 
     // 2. RENAME COLUMN
     executor
-        .execute("ALTER TABLE users RENAME COLUMN name TO full_name", vec![], None)
+        .execute(
+            "ALTER TABLE users RENAME COLUMN name TO full_name",
+            vec![],
+            None,
+        )
         .await
         .unwrap();
-    let result = executor.execute("SELECT full_name FROM users", vec![], None).await.unwrap();
+    let result = executor
+        .execute("SELECT full_name FROM users", vec![], None)
+        .await
+        .unwrap();
     assert_eq!(result.rows[0][0], Value::Text("Alice".to_string()));
 
     // 3. DROP COLUMN
@@ -100,7 +129,10 @@ async fn test_alter_table() {
         .execute("ALTER TABLE users DROP COLUMN age", vec![], None)
         .await
         .unwrap();
-    let result = executor.execute("SELECT * FROM users", vec![], None).await.unwrap();
+    let result = executor
+        .execute("SELECT * FROM users", vec![], None)
+        .await
+        .unwrap();
     assert_eq!(result.columns.len(), 2); // id, full_name
     assert_eq!(result.rows[0].len(), 2);
 
@@ -109,10 +141,16 @@ async fn test_alter_table() {
         .execute("ALTER TABLE users RENAME TO members", vec![], None)
         .await
         .unwrap();
-    let result = executor.execute("SELECT * FROM members", vec![], None).await.unwrap();
+    let result = executor
+        .execute("SELECT * FROM members", vec![], None)
+        .await
+        .unwrap();
     assert_eq!(result.rows.len(), 1);
-    
+
     // Original table should be gone
-    let err = executor.execute("SELECT * FROM users", vec![], None).await.unwrap_err();
+    let err = executor
+        .execute("SELECT * FROM users", vec![], None)
+        .await
+        .unwrap_err();
     assert!(matches!(err, crate::sql::error::SqlError::TableNotFound(_)));
 }

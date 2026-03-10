@@ -12,7 +12,11 @@ async fn test_inner_join() {
         .await
         .unwrap();
     executor
-        .execute("CREATE TABLE posts (id INT, user_id INT, title TEXT)", vec![], None)
+        .execute(
+            "CREATE TABLE posts (id INT, user_id INT, title TEXT)",
+            vec![],
+            None,
+        )
         .await
         .unwrap();
 
@@ -35,9 +39,13 @@ async fn test_inner_join() {
         .unwrap();
 
     let result = executor
-            .execute("SELECT users.name, posts.title FROM users JOIN posts ON users.id = posts.user_id", vec![], None)
-            .await
-            .unwrap();
+        .execute(
+            "SELECT users.name, posts.title FROM users JOIN posts ON users.id = posts.user_id",
+            vec![],
+            None,
+        )
+        .await
+        .unwrap();
 
     assert_eq!(result.rows.len(), 2);
     assert_eq!(result.rows[0][0], Value::Text("Alice".to_string()));
@@ -54,7 +62,11 @@ async fn test_left_join() {
         .await
         .unwrap();
     executor
-        .execute("CREATE TABLE posts (id INT, user_id INT, title TEXT)", vec![], None)
+        .execute(
+            "CREATE TABLE posts (id INT, user_id INT, title TEXT)",
+            vec![],
+            None,
+        )
         .await
         .unwrap();
 

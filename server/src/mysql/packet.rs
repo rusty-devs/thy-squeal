@@ -6,13 +6,13 @@ use tokio::net::TcpStream;
 pub async fn read_packet(socket: &mut TcpStream) -> Result<(u8, Vec<u8>)> {
     let mut header = [0u8; 4];
     socket.read_exact(&mut header).await?;
-    
+
     let len = (header[0] as usize) | ((header[1] as usize) << 8) | ((header[2] as usize) << 16);
     let seq = header[3];
-    
+
     let mut payload = vec![0u8; len];
     socket.read_exact(&mut payload).await?;
-    
+
     Ok((seq, payload))
 }
 
@@ -23,7 +23,7 @@ pub async fn send_packet(socket: &mut TcpStream, seq: u8, payload: &[u8]) -> Res
     header[1] = ((len >> 8) & 0xFF) as u8;
     header[2] = ((len >> 16) & 0xFF) as u8;
     header[3] = seq;
-    
+
     socket.write_all(&header).await?;
     socket.write_all(payload).await?;
     Ok(())

@@ -15,15 +15,18 @@ pub fn parse_any_expression(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expr
         Rule::expression => parse_expression(pair),
         Rule::term => parse_term(pair),
         Rule::factor => parse_factor(pair),
-        Rule::literal 
-        | Rule::string_literal 
-        | Rule::number_literal 
-        | Rule::boolean_literal 
+        Rule::literal
+        | Rule::string_literal
+        | Rule::number_literal
+        | Rule::boolean_literal
         | Rule::KW_NULL => Ok(Expression::Literal(parse_literal(pair)?)),
         Rule::placeholder => parse_placeholder(pair),
         Rule::aggregate_func => parse_aggregate(pair),
         Rule::scalar_func => parse_scalar_func(pair),
-        _ => Err(SqlError::Parse(format!("Unexpected rule for expression: {:?}", pair.as_rule()))),
+        _ => Err(SqlError::Parse(format!(
+            "Unexpected rule for expression: {:?}",
+            pair.as_rule()
+        ))),
     }
 }
 
@@ -71,7 +74,9 @@ pub fn parse_term(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expression> {
             "*" => BinaryOp::Mul,
             "/" => BinaryOp::Div,
             "%" => {
-                return Err(SqlError::Parse("Modulo operator not yet supported".to_string()));
+                return Err(SqlError::Parse(
+                    "Modulo operator not yet supported".to_string(),
+                ));
             }
             _ => {
                 return Err(SqlError::Parse(format!(
@@ -99,10 +104,10 @@ pub fn parse_factor(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expression> 
     match first.as_rule() {
         Rule::aggregate_func => parse_aggregate(first),
         Rule::scalar_func => parse_scalar_func(first),
-        Rule::literal 
-        | Rule::string_literal 
-        | Rule::number_literal 
-        | Rule::boolean_literal 
+        Rule::literal
+        | Rule::string_literal
+        | Rule::number_literal
+        | Rule::boolean_literal
         | Rule::KW_NULL => Ok(Expression::Literal(parse_literal(first)?)),
         Rule::placeholder => parse_placeholder(first),
         Rule::column_ref => {
@@ -125,20 +130,26 @@ pub fn parse_factor(pair: pest::iterators::Pair<Rule>) -> SqlResult<Expression> 
         }
         Rule::expression => parse_any_expression(first),
         Rule::KW_NOT => {
-            let next_factor = inner.next().ok_or_else(|| SqlError::Parse("Missing factor after NOT".to_string()))?;
+            let next_factor = inner
+                .next()
+                .ok_or_else(|| SqlError::Parse("Missing factor after NOT".to_string()))?;
             let _ = parse_factor(next_factor)?;
-            Err(SqlError::Parse("NOT in expression factor not yet implemented".to_string()))
+            Err(SqlError::Parse(
+                "NOT in expression factor not yet implemented".to_string(),
+            ))
         }
         _ => {
             if first.as_str().starts_with('(')
-                && let Some(inner_pair) = first.clone().into_inner().find(|p| p.as_rule() == Rule::select_stmt || p.as_rule() == Rule::select_stmt_inner)
+                && let Some(inner_pair) = first.clone().into_inner().find(|p| {
+                    p.as_rule() == Rule::select_stmt || p.as_rule() == Rule::select_stmt_inner
+                })
             {
                 let stmt = super::select::parse_select(inner_pair)?;
                 if let SqlStmt::Select(s) = stmt {
                     return Ok(Expression::Subquery(Box::new(s)));
                 }
             }
-            
+
             Err(SqlError::Parse(format!(
                 "Unsupported factor rule: {:?}",
                 first.as_rule()
@@ -152,7 +163,9 @@ pub fn parse_placeholder(pair: pest::iterators::Pair<Rule>) -> SqlResult<Express
     if s == "?" {
         Ok(Expression::Placeholder(0))
     } else if let Some(idx_str) = s.strip_prefix('$') {
-        let idx = idx_str.parse::<usize>().map_err(|_| SqlError::Parse(format!("Invalid placeholder index: {}", s)))?;
+        let idx = idx_str
+            .parse::<usize>()
+            .map_err(|_| SqlError::Parse(format!("Invalid placeholder index: {}", s)))?;
         Ok(Expression::Placeholder(idx))
     } else {
         Err(SqlError::Parse(format!("Invalid placeholder: {}", s)))

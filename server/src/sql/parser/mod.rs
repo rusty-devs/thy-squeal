@@ -36,7 +36,7 @@ pub fn parse(sql: &str) -> SqlResult<SqlStmt> {
                         .into_inner()
                         .find(|p| p.as_rule() == Rule::select_stmt_inner)
                         .ok_or_else(|| SqlError::Parse("Missing SELECT in EXPLAIN".to_string()))?;
-                    
+
                     let select_stmt = select::parse_select(inner_select)?;
                     if let SqlStmt::Select(s) = select_stmt {
                         Ok(SqlStmt::Explain(s))
@@ -58,7 +58,7 @@ pub fn parse(sql: &str) -> SqlResult<SqlStmt> {
                     )));
                 }
             }?;
-            
+
             stmt.resolve_placeholders();
             return Ok(stmt);
         }

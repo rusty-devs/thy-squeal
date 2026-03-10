@@ -1,12 +1,12 @@
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use crate::sql::eval::Evaluator;
 use super::error::StorageError;
 use super::persistence::{Persister, WalRecord};
-use super::row::{Column, Row};
+use super::row::Column;
 use super::table::Table;
 use super::value::Value;
 use super::wal;
+use crate::sql::eval::Evaluator;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct DatabaseState {

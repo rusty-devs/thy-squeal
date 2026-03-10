@@ -1,12 +1,12 @@
-pub mod packet;
 pub mod connection;
+pub mod packet;
 
+use self::connection::handle_connection;
+use crate::sql::executor::Executor;
 use anyhow::Result;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tracing::{error, info};
-use crate::sql::executor::Executor;
-use self::connection::handle_connection;
 
 /// MySQL Protocol Handler
 pub struct MySqlProtocol {

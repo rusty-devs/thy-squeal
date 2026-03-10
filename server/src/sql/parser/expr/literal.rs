@@ -11,13 +11,17 @@ pub fn parse_literal(pair: pest::iterators::Pair<Rule>) -> SqlResult<Value> {
             if s.to_uppercase() == "NULL" {
                 return Ok(Value::Null);
             }
-            if s.to_lowercase() == "true" { return Ok(Value::Bool(true)); }
-            if s.to_lowercase() == "false" { return Ok(Value::Bool(false)); }
-            
-            if s.starts_with('\'') && s.ends_with('\'') {
-                return Ok(Value::Text(s[1..s.len()-1].to_string()));
+            if s.to_lowercase() == "true" {
+                return Ok(Value::Bool(true));
             }
-            
+            if s.to_lowercase() == "false" {
+                return Ok(Value::Bool(false));
+            }
+
+            if s.starts_with('\'') && s.ends_with('\'') {
+                return Ok(Value::Text(s[1..s.len() - 1].to_string()));
+            }
+
             // Try number
             if let Ok(i) = s.parse::<i64>() {
                 return Ok(Value::Int(i));
@@ -25,7 +29,7 @@ pub fn parse_literal(pair: pest::iterators::Pair<Rule>) -> SqlResult<Value> {
             if let Ok(f) = s.parse::<f64>() {
                 return Ok(Value::Float(f));
             }
-            
+
             return Err(SqlError::Parse(format!("Could not parse literal: {}", s)));
         }
     };

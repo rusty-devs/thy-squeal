@@ -29,7 +29,7 @@ pub fn parse_alter_table(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt
             if next.as_rule() == Rule::KW_COLUMN {
                 next = action_inner.next().unwrap();
             }
-            
+
             AlterAction::AddColumn(parse_column_def(next)?)
         }
         Rule::alter_drop_column => {
@@ -59,7 +59,9 @@ pub fn parse_alter_table(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt
             let _ = action_inner.next();
             let new_name = action_inner
                 .next()
-                .ok_or_else(|| SqlError::Parse("Missing new column name in RENAME COLUMN".to_string()))?
+                .ok_or_else(|| {
+                    SqlError::Parse("Missing new column name in RENAME COLUMN".to_string())
+                })?
                 .as_str()
                 .trim()
                 .to_string();
@@ -72,7 +74,9 @@ pub fn parse_alter_table(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt
             let _ = action_inner.next();
             let new_name = action_inner
                 .next()
-                .ok_or_else(|| SqlError::Parse("Missing new table name in RENAME TABLE".to_string()))?
+                .ok_or_else(|| {
+                    SqlError::Parse("Missing new table name in RENAME TABLE".to_string())
+                })?
                 .as_str()
                 .trim()
                 .to_string();

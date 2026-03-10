@@ -1,18 +1,18 @@
 pub mod aggregate;
 pub mod ddl;
-pub mod dml;
 pub mod dispatch;
+pub mod dml;
 pub mod dump;
 pub mod explain;
 pub mod result;
 pub mod search;
 pub mod select;
-pub mod tx;
 #[cfg(test)]
 mod tests;
+pub mod tx;
 
 use super::ast::SqlStmt;
-use super::error::{SqlResult};
+use super::error::SqlResult;
 use super::eval::Evaluator;
 use super::parser::parse;
 use crate::storage::{Database, DatabaseState, Row, Table, Value};
@@ -36,7 +36,12 @@ impl Executor {
         }
     }
 
-    pub async fn execute(&self, sql: &str, params: Vec<Value>, transaction_id: Option<String>) -> SqlResult<QueryResult> {
+    pub async fn execute(
+        &self,
+        sql: &str,
+        params: Vec<Value>,
+        transaction_id: Option<String>,
+    ) -> SqlResult<QueryResult> {
         let stmt = parse(sql)?;
         self.exec_stmt(stmt, params, transaction_id).await
     }

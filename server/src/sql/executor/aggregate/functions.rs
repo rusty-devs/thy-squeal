@@ -60,7 +60,7 @@ impl Executor {
                         _ => {
                             return Err(SqlError::TypeMismatch(
                                 "SUM requires numeric values".to_string(),
-                            ))
+                            ));
                         }
                     }
                 }
@@ -135,7 +135,7 @@ impl Executor {
                         _ => {
                             return Err(SqlError::TypeMismatch(
                                 "AVG requires numeric values".to_string(),
-                            ))
+                            ));
                         }
                     }
                 }

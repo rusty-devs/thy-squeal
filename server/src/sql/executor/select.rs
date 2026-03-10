@@ -1,11 +1,11 @@
-use crate::storage::{DatabaseState, Row, Table, Value};
-use crate::storage::info_schema::get_info_schema_tables;
 use super::super::ast::{self, SelectStmt};
 use super::super::error::{SqlError, SqlResult};
 use super::super::eval::{evaluate_condition_joined, evaluate_expression_joined};
-use super::{QueryResult, Executor};
-use futures::future::BoxFuture;
+use super::{Executor, QueryResult};
+use crate::storage::info_schema::get_info_schema_tables;
+use crate::storage::{DatabaseState, Row, Table, Value};
 use futures::FutureExt;
+use futures::future::BoxFuture;
 
 pub type JoinedContext<'a> = Vec<(&'a Table, Option<String>, Row)>;
 
@@ -24,7 +24,8 @@ impl Executor {
             let target_table = if stmt.table.starts_with("information_schema.") {
                 let table_name = stmt.table.strip_prefix("information_schema.").unwrap();
                 info_schema_tables = get_info_schema_tables(db_state);
-                info_schema_tables.get(table_name)
+                info_schema_tables
+                    .get(table_name)
                     .ok_or_else(|| SqlError::TableNotFound(stmt.table.clone()))?
             } else {
                 db_state
@@ -77,12 +78,15 @@ impl Executor {
             // 3. Process JOINS
             for join in &stmt.joins {
                 let join_table = if join.table.starts_with("information_schema.") {
-                    return Err(SqlError::Runtime("JOIN with information_schema is not yet supported".to_string()));
+                    return Err(SqlError::Runtime(
+                        "JOIN with information_schema is not yet supported".to_string(),
+                    ));
                 } else {
-                    db_state.get_table(&join.table)
+                    db_state
+                        .get_table(&join.table)
                         .ok_or_else(|| SqlError::TableNotFound(join.table.clone()))?
                 };
-                
+
                 let join_alias = join.table_alias.clone();
                 let mut next_joined_rows = Vec::new();
 
@@ -93,7 +97,11 @@ impl Executor {
                         let eval_ctx: Vec<(&Table, Option<&str>, &Row)> = existing_ctx
                             .iter()
                             .map(|(t, a, r)| (*t, a.as_deref(), r))
-                            .chain(std::iter::once((join_table, join_alias.as_deref(), new_row)))
+                            .chain(std::iter::once((
+                                join_table,
+                                join_alias.as_deref(),
+                                new_row,
+                            )))
                             .collect();
 
                         if evaluate_condition_joined(
@@ -124,7 +132,8 @@ impl Executor {
             let mut matched_rows = Vec::new();
             if let Some(ref where_cond) = stmt.where_clause {
                 for ctx in joined_rows {
-                    let eval_ctx: Vec<(&Table, Option<&str>, &Row)> = ctx.iter().map(|(t, a, r)| (*t, a.as_deref(), r)).collect();
+                    let eval_ctx: Vec<(&Table, Option<&str>, &Row)> =
+                        ctx.iter().map(|(t, a, r)| (*t, a.as_deref(), r)).collect();
                     if evaluate_condition_joined(
                         self,
                         where_cond,
@@ -163,8 +172,10 @@ impl Executor {
             if !stmt.order_by.is_empty() {
                 let mut err = None;
                 matched_rows.sort_by(|a, b| {
-                    let eval_a: Vec<(&Table, Option<&str>, &Row)> = a.iter().map(|(t, al, r)| (*t, al.as_deref(), r)).collect();
-                    let eval_b: Vec<(&Table, Option<&str>, &Row)> = b.iter().map(|(t, al, r)| (*t, al.as_deref(), r)).collect();
+                    let eval_a: Vec<(&Table, Option<&str>, &Row)> =
+                        a.iter().map(|(t, al, r)| (*t, al.as_deref(), r)).collect();
+                    let eval_b: Vec<(&Table, Option<&str>, &Row)> =
+                        b.iter().map(|(t, al, r)| (*t, al.as_deref(), r)).collect();
 
                     for item in &stmt.order_by {
                         let val_a = match evaluate_expression_joined(
@@ -231,7 +242,8 @@ impl Executor {
 
             let mut projected_rows = Vec::new();
             for ctx in final_rows {
-                let eval_ctx: Vec<(&Table, Option<&str>, &Row)> = ctx.iter().map(|(t, a, r)| (*t, a.as_deref(), r)).collect();
+                let eval_ctx: Vec<(&Table, Option<&str>, &Row)> =
+                    ctx.iter().map(|(t, a, r)| (*t, a.as_deref(), r)).collect();
                 let mut row_values = Vec::new();
                 for col in &stmt.columns {
                     match &col.expr {

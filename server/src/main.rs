@@ -6,11 +6,11 @@ mod storage;
 #[cfg(test)]
 mod tests;
 
+use crate::mysql::MySqlProtocol;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tracing::{Level, info, error};
+use tracing::{Level, error, info};
 use tracing_subscriber::FmtSubscriber;
-use crate::mysql::MySqlProtocol;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -55,7 +55,8 @@ async fn main() -> anyhow::Result<()> {
 
     // 2. HTTP Server Task
     let http_executor = executor.clone();
-    let http_addr: SocketAddr = format!("{}:{}", config.server.host, config.server.http_port).parse()?;
+    let http_addr: SocketAddr =
+        format!("{}:{}", config.server.host, config.server.http_port).parse()?;
     let http_handle = tokio::spawn(async move {
         let app = http::create_app(http_executor, config);
         info!("HTTP server listening on http://{}", http_addr);

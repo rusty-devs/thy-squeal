@@ -1,12 +1,9 @@
+use super::common::setup;
 use crate::{http::create_app, sql::Executor};
-use axum::{
-    body::Body,
-    http::Request,
-};
+use axum::{body::Body, http::Request};
 use serde_json::{Value, json};
 use std::sync::Arc;
 use tower::ServiceExt; // for `oneshot`
-use super::common::setup;
 
 #[tokio::test]
 async fn test_full_text_search() {

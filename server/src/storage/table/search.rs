@@ -1,14 +1,17 @@
-use std::sync::{Arc, Mutex};
 use super::super::row::Row;
 use super::super::search::SearchIndex;
 use super::Table;
+use std::sync::{Arc, Mutex};
 
 impl Table {
     pub fn setup_search_index(&mut self, path: &str) -> anyhow::Result<()> {
         let text_fields: Vec<String> = self
             .columns
             .iter()
-            .filter(|c| c.data_type == crate::storage::DataType::Text || c.data_type == crate::storage::DataType::VarChar)
+            .filter(|c| {
+                c.data_type == crate::storage::DataType::Text
+                    || c.data_type == crate::storage::DataType::VarChar
+            })
             .map(|c| c.name.clone())
             .collect();
 
@@ -29,7 +32,8 @@ impl Table {
         if let Some(ref search_index) = self.search_index {
             let mut field_values = Vec::new();
             for (i, col) in self.columns.iter().enumerate() {
-                if (col.data_type == crate::storage::DataType::Text || col.data_type == crate::storage::DataType::VarChar)
+                if (col.data_type == crate::storage::DataType::Text
+                    || col.data_type == crate::storage::DataType::VarChar)
                     && let Some(val) = row.values.get(i).and_then(|v| v.as_text())
                 {
                     field_values.push((col.name.clone(), val.to_string()));

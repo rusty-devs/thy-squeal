@@ -42,7 +42,10 @@ pub fn parse_search(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
         .map(|p| p.as_str().trim_matches('\'').to_string())
         .ok_or_else(|| SqlError::Parse("Missing query in SEARCH".to_string()))?;
 
-    Ok(SqlStmt::Search(crate::sql::ast::SearchStmt { table, query }))
+    Ok(SqlStmt::Search(crate::sql::ast::SearchStmt {
+        table,
+        query,
+    }))
 }
 
 pub fn parse_prepare(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
@@ -83,7 +86,10 @@ pub fn parse_execute(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
         }
     }
 
-    Ok(SqlStmt::Execute(crate::sql::ast::ExecuteStmt { name, params }))
+    Ok(SqlStmt::Execute(crate::sql::ast::ExecuteStmt {
+        name,
+        params,
+    }))
 }
 
 pub fn parse_deallocate(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {

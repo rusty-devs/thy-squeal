@@ -1,8 +1,8 @@
-use crate::storage::{Value, WalRecord};
 use super::super::super::ast::InsertStmt;
 use super::super::super::error::{SqlError, SqlResult};
-use super::super::super::eval::{evaluate_expression_joined, Evaluator};
-use super::super::{QueryResult, Executor};
+use super::super::super::eval::{Evaluator, evaluate_expression_joined};
+use super::super::{Executor, QueryResult};
+use crate::storage::{Value, WalRecord};
 
 impl Executor {
     pub(crate) async fn exec_insert(
@@ -46,11 +46,12 @@ impl Executor {
             // Initialize with NULLs
             let mut vals = vec![Value::Null; table.columns.len()];
             for (i, name) in col_names.iter().enumerate() {
-                let col_idx = table.column_index(name).ok_or_else(|| {
-                    SqlError::ColumnNotFound(format!("{}.{}", table_name, name))
-                })?;
-                
-                let mut val = evaluate_expression_joined(self, &stmt.values[i], &[], params, &[], &state)?;
+                let col_idx = table
+                    .column_index(name)
+                    .ok_or_else(|| SqlError::ColumnNotFound(format!("{}.{}", table_name, name)))?;
+
+                let mut val =
+                    evaluate_expression_joined(self, &stmt.values[i], &[], params, &[], &state)?;
                 let target_type = &table.columns[col_idx].data_type;
                 val = val.cast(target_type).map_err(|e| {
                     SqlError::TypeMismatch(format!(
@@ -85,7 +86,7 @@ impl Executor {
             let table = state
                 .get_table_mut(&table_name)
                 .ok_or_else(|| SqlError::TableNotFound(table_name.clone()))?;
-            
+
             let mut to_generate = Vec::new();
             for (i, col) in table.columns.iter().enumerate() {
                 if col.is_auto_increment && matches!(&mapped_values[i], Value::Null) {
@@ -99,7 +100,8 @@ impl Executor {
                 }
             }
             Ok(())
-        }).await?;
+        })
+        .await?;
 
         // Log to WAL
         {

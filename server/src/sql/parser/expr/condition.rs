@@ -51,12 +51,10 @@ pub fn parse_condition(pair: pest::iterators::Pair<Rule>) -> SqlResult<Condition
                             )));
                         }
                     };
-                    let right_pair = inner
-                        .next()
-                        .ok_or_else(|| {
-                            SqlError::Parse("Missing right side of comparison".to_string())
-                        })?;
-                    
+                    let right_pair = inner.next().ok_or_else(|| {
+                        SqlError::Parse("Missing right side of comparison".to_string())
+                    })?;
+
                     let right = if right_pair.as_rule() == Rule::expression {
                         parse_expression(right_pair)?
                     } else {
@@ -64,22 +62,29 @@ pub fn parse_condition(pair: pest::iterators::Pair<Rule>) -> SqlResult<Condition
                         let subquery = find_select_stmt(right_pair)?;
                         Expression::Subquery(Box::new(subquery))
                     };
-                    
+
                     Ok(Condition::Comparison(left, op, right))
                 }
                 Rule::KW_IS => {
                     let mut is_not = false;
-                    let next = inner.next().ok_or_else(|| SqlError::Parse("Missing token after IS".to_string()))?;
-                    
+                    let next = inner
+                        .next()
+                        .ok_or_else(|| SqlError::Parse("Missing token after IS".to_string()))?;
+
                     let final_token = if next.as_rule() == Rule::KW_NOT {
                         is_not = true;
-                        inner.next().ok_or_else(|| SqlError::Parse("Expected NULL after IS NOT".to_string()))?
+                        inner.next().ok_or_else(|| {
+                            SqlError::Parse("Expected NULL after IS NOT".to_string())
+                        })?
                     } else {
                         next
                     };
 
                     if final_token.as_rule() != Rule::KW_NULL {
-                        return Err(SqlError::Parse(format!("Expected NULL after IS, got {:?}", final_token.as_rule())));
+                        return Err(SqlError::Parse(format!(
+                            "Expected NULL after IS, got {:?}",
+                            final_token.as_rule()
+                        )));
                     }
 
                     if is_not {
@@ -129,7 +134,9 @@ pub fn parse_condition(pair: pest::iterators::Pair<Rule>) -> SqlResult<Condition
     }
 }
 
-pub fn find_select_stmt(pair: pest::iterators::Pair<Rule>) -> SqlResult<super::super::super::ast::SelectStmt> {
+pub fn find_select_stmt(
+    pair: pest::iterators::Pair<Rule>,
+) -> SqlResult<super::super::super::ast::SelectStmt> {
     if pair.as_rule() == Rule::select_stmt || pair.as_rule() == Rule::select_stmt_inner {
         let stmt = super::super::select::parse_select(pair.clone())?;
         if let super::super::super::ast::SqlStmt::Select(s) = stmt {

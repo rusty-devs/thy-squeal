@@ -1,11 +1,11 @@
+use super::packet::*;
+use crate::sql::executor::{Executor, QueryResult};
+use crate::storage::Value;
 use anyhow::Result;
 use byteorder::{LittleEndian, WriteBytesExt};
 use std::sync::Arc;
 use tokio::net::TcpStream;
 use tracing::info;
-use crate::sql::executor::{Executor, QueryResult};
-use crate::storage::Value;
-use super::packet::*;
 
 pub async fn handle_connection(mut socket: TcpStream, executor: Arc<Executor>) -> Result<()> {
     // 1. Send Initial Handshake Packet
@@ -32,11 +32,13 @@ pub async fn handle_connection(mut socket: TcpStream, executor: Arc<Executor>) -
 
         match command {
             0x01 => break, // COM_QUIT
-            0x03 => { // COM_QUERY
+            0x03 => {
+                // COM_QUERY
                 let query = match std::str::from_utf8(data) {
                     Ok(q) => q,
                     Err(_) => {
-                        send_error(&mut socket, seq + 1, 1105, "HY000", "Invalid UTF-8 query").await?;
+                        send_error(&mut socket, seq + 1, 1105, "HY000", "Invalid UTF-8 query")
+                            .await?;
                         continue;
                     }
                 };
@@ -53,7 +55,8 @@ pub async fn handle_connection(mut socket: TcpStream, executor: Arc<Executor>) -
                     }
                 }
             }
-            0x0E => { // COM_PING
+            0x0E => {
+                // COM_PING
                 send_ok(&mut socket, seq + 1).await?;
             }
             _ => {
@@ -91,18 +94,24 @@ async fn send_ok(socket: &mut TcpStream, seq: u8) -> Result<()> {
     payload.push(0); // Last insert ID
     WriteBytesExt::write_u16::<LittleEndian>(&mut payload, 0x0002)?; // Status flags
     WriteBytesExt::write_u16::<LittleEndian>(&mut payload, 0x0000)?; // Warnings
-    
+
     send_packet(socket, seq, &payload).await
 }
 
-async fn send_error(socket: &mut TcpStream, seq: u8, code: u16, state: &str, msg: &str) -> Result<()> {
+async fn send_error(
+    socket: &mut TcpStream,
+    seq: u8,
+    code: u16,
+    state: &str,
+    msg: &str,
+) -> Result<()> {
     let mut payload = Vec::new();
     payload.push(0xFF); // Error header
     WriteBytesExt::write_u16::<LittleEndian>(&mut payload, code)?;
     payload.push(b'#'); // SQL State marker
     payload.extend_from_slice(state.as_bytes());
     payload.extend_from_slice(msg.as_bytes());
-    
+
     send_packet(socket, seq, &payload).await
 }
 
@@ -117,9 +126,9 @@ async fn send_result_set(socket: &mut TcpStream, mut seq: u8, result: QueryResul
     for col_name in &result.columns {
         let mut payload = Vec::new();
         write_len_enc_str(&mut payload, "def"); // Catalog
-        write_len_enc_str(&mut payload, "");    // Schema
-        write_len_enc_str(&mut payload, "");    // Table
-        write_len_enc_str(&mut payload, "");    // Org Table
+        write_len_enc_str(&mut payload, ""); // Schema
+        write_len_enc_str(&mut payload, ""); // Table
+        write_len_enc_str(&mut payload, ""); // Org Table
         write_len_enc_str(&mut payload, col_name); // Name
         write_len_enc_str(&mut payload, col_name); // Org Name
         payload.push(0x0C); // Length of fixed-length fields
@@ -129,7 +138,7 @@ async fn send_result_set(socket: &mut TcpStream, mut seq: u8, result: QueryResul
         WriteBytesExt::write_u16::<LittleEndian>(&mut payload, 0)?; // Flags
         payload.push(0x00); // Decimals
         WriteBytesExt::write_u16::<LittleEndian>(&mut payload, 0)?; // Filter
-        
+
         send_packet(socket, seq, &payload).await?;
         seq += 1;
     }
@@ -162,6 +171,6 @@ async fn send_eof(socket: &mut TcpStream, seq: u8) -> Result<()> {
     payload.push(0xFE); // EOF header
     WriteBytesExt::write_u16::<LittleEndian>(&mut payload, 0)?; // Warnings
     WriteBytesExt::write_u16::<LittleEndian>(&mut payload, 0x0002)?; // Status flags
-    
+
     send_packet(socket, seq, &payload).await
 }

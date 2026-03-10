@@ -1,14 +1,14 @@
+pub mod clauses;
 pub mod columns;
 pub mod joins;
-pub mod clauses;
 
 use super::super::ast::{SelectStmt, SqlStmt};
-use super::super::error::{SqlError, SqlResult};
+use super::super::error::SqlResult;
 use super::super::parser::Rule;
-use super::expr::{parse_condition};
+use super::expr::parse_condition;
+pub use clauses::*;
 pub use columns::*;
 pub use joins::*;
-pub use clauses::*;
 
 pub fn parse_select(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
     let mut inner = if pair.as_rule() == Rule::select_stmt {
@@ -43,7 +43,9 @@ pub fn parse_select(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
                 }
             }
             Rule::join_clause => joins.push(parse_join(p)?),
-            Rule::where_clause => where_clause = Some(parse_condition(p.into_inner().nth(1).unwrap())?),
+            Rule::where_clause => {
+                where_clause = Some(parse_condition(p.into_inner().nth(1).unwrap())?)
+            }
             Rule::group_by_clause => group_by = parse_group_by(p)?,
             Rule::having_clause => having = Some(parse_condition(p.into_inner().nth(1).unwrap())?),
             Rule::order_by_clause => order_by = parse_order_by(p)?,

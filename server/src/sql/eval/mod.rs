@@ -2,11 +2,11 @@ pub mod column;
 pub mod condition;
 pub mod expression;
 
-use crate::storage::{DatabaseState, Row, Table, Value};
 use super::ast::{Condition, Expression};
 use super::error::{SqlError, SqlResult};
-use futures::future::BoxFuture;
+use crate::storage::{DatabaseState, Row, Table, Value};
 use futures::FutureExt;
+use futures::future::BoxFuture;
 
 pub use condition::evaluate_condition_joined;
 pub use expression::evaluate_expression_joined;
@@ -53,7 +53,14 @@ pub fn evaluate_condition(
     row: &Row,
     db_state: &DatabaseState,
 ) -> SqlResult<bool> {
-    evaluate_condition_joined(executor, cond, &[(table, table_alias, row)], params, &[], db_state)
+    evaluate_condition_joined(
+        executor,
+        cond,
+        &[(table, table_alias, row)],
+        params,
+        &[],
+        db_state,
+    )
 }
 
 #[allow(dead_code)]
@@ -66,5 +73,12 @@ pub fn evaluate_expression(
     row: &Row,
     db_state: &DatabaseState,
 ) -> SqlResult<Value> {
-    evaluate_expression_joined(executor, expr, &[(table, table_alias, row)], params, &[], db_state)
+    evaluate_expression_joined(
+        executor,
+        expr,
+        &[(table, table_alias, row)],
+        params,
+        &[],
+        db_state,
+    )
 }

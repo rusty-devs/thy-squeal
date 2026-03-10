@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use tracing::info;
 use std::fs;
+use tracing::info;
 
 mod config;
 mod http;

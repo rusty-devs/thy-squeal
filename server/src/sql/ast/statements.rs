@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
 use super::condition::Condition;
 use super::expression::Expression;
 use crate::storage::Column;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PrepareStmt {

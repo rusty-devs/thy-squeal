@@ -1,7 +1,7 @@
-use crate::storage::{DatabaseState, Value};
 use super::super::ast;
 use super::super::error::{SqlError, SqlResult};
-use super::{QueryResult, Executor};
+use super::{Executor, QueryResult};
+use crate::storage::{DatabaseState, Value};
 
 impl Executor {
     pub(crate) async fn exec_search(

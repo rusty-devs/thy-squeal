@@ -1,4 +1,6 @@
-use super::super::ast::{AlterAction, AlterTableStmt, CreateIndexStmt, CreateTableStmt, DropTableStmt, IndexType};
+use super::super::ast::{
+    AlterAction, AlterTableStmt, CreateIndexStmt, CreateTableStmt, DropTableStmt, IndexType,
+};
 use super::super::error::{SqlError, SqlResult};
 use super::{Executor, QueryResult};
 use crate::storage::{Table, WalRecord};
@@ -109,19 +111,28 @@ impl Executor {
             match stmt.action {
                 AlterAction::AddColumn(col) => {
                     let table = state.get_table_mut(&stmt.table).unwrap();
-                    table.add_column(col).map_err(|e| SqlError::Storage(e.to_string()))?;
+                    table
+                        .add_column(col)
+                        .map_err(|e| SqlError::Storage(e.to_string()))?;
                 }
                 AlterAction::DropColumn(name) => {
                     let table = state.get_table_mut(&stmt.table).unwrap();
-                    table.drop_column(&name).map_err(|e| SqlError::Storage(e.to_string()))?;
+                    table
+                        .drop_column(&name)
+                        .map_err(|e| SqlError::Storage(e.to_string()))?;
                 }
                 AlterAction::RenameColumn { old_name, new_name } => {
                     let table = state.get_table_mut(&stmt.table).unwrap();
-                    table.rename_column(&old_name, &new_name).map_err(|e| SqlError::Storage(e.to_string()))?;
+                    table
+                        .rename_column(&old_name, &new_name)
+                        .map_err(|e| SqlError::Storage(e.to_string()))?;
                 }
                 AlterAction::RenameTable(new_name) => {
                     if state.get_table(&new_name).is_some() {
-                        return Err(SqlError::Storage(format!("Table {} already exists", new_name)));
+                        return Err(SqlError::Storage(format!(
+                            "Table {} already exists",
+                            new_name
+                        )));
                     }
                     let mut t = state.tables.remove(&stmt.table).unwrap();
                     t.rename_table(new_name.clone());

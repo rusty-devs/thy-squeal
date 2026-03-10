@@ -16,7 +16,10 @@ async fn test_create_table_insert_select() {
         .execute("INSERT INTO users VALUES (1, 'Alice')", vec![], None)
         .await
         .unwrap();
-    let result = executor.execute("SELECT * FROM users", vec![], None).await.unwrap();
+    let result = executor
+        .execute("SELECT * FROM users", vec![], None)
+        .await
+        .unwrap();
 
     assert_eq!(result.rows.len(), 1);
     assert_eq!(result.rows[0][0], Value::Int(1));
@@ -32,7 +35,10 @@ async fn test_drop_table() {
         .execute("CREATE TABLE users (id INT)", vec![], None)
         .await
         .unwrap();
-    executor.execute("DROP TABLE users", vec![], None).await.unwrap();
+    executor
+        .execute("DROP TABLE users", vec![], None)
+        .await
+        .unwrap();
 
     let result = executor.execute("SELECT * FROM users", vec![], None).await;
     assert!(matches!(result, Err(SqlError::TableNotFound(_))));
@@ -116,7 +122,10 @@ async fn test_delete() {
         .await
         .unwrap();
 
-    let result = executor.execute("SELECT * FROM users", vec![], None).await.unwrap();
+    let result = executor
+        .execute("SELECT * FROM users", vec![], None)
+        .await
+        .unwrap();
     assert!(result.rows.is_empty());
 }
 
@@ -129,9 +138,18 @@ async fn test_order_by() {
         .execute("CREATE TABLE t (v INT)", vec![], None)
         .await
         .unwrap();
-    executor.execute("INSERT INTO t VALUES (3)", vec![], None).await.unwrap();
-    executor.execute("INSERT INTO t VALUES (1)", vec![], None).await.unwrap();
-    executor.execute("INSERT INTO t VALUES (2)", vec![], None).await.unwrap();
+    executor
+        .execute("INSERT INTO t VALUES (3)", vec![], None)
+        .await
+        .unwrap();
+    executor
+        .execute("INSERT INTO t VALUES (1)", vec![], None)
+        .await
+        .unwrap();
+    executor
+        .execute("INSERT INTO t VALUES (2)", vec![], None)
+        .await
+        .unwrap();
 
     let result = executor
         .execute("SELECT v FROM t ORDER BY v ASC", vec![], None)
@@ -167,7 +185,11 @@ async fn test_limit_offset() {
     }
 
     let result = executor
-        .execute("SELECT v FROM t ORDER BY v ASC LIMIT 3 OFFSET 2", vec![], None)
+        .execute(
+            "SELECT v FROM t ORDER BY v ASC LIMIT 3 OFFSET 2",
+            vec![],
+            None,
+        )
         .await
         .unwrap();
     assert_eq!(result.rows.len(), 3);
@@ -239,9 +261,13 @@ async fn test_group_by_having() {
         .unwrap();
 
     let result = executor
-            .execute("SELECT dept, SUM(amount) FROM sales GROUP BY dept HAVING SUM(amount) > 25", vec![], None)
-            .await
-            .unwrap();
+        .execute(
+            "SELECT dept, SUM(amount) FROM sales GROUP BY dept HAVING SUM(amount) > 25",
+            vec![],
+            None,
+        )
+        .await
+        .unwrap();
 
     assert_eq!(result.rows.len(), 1);
     assert_eq!(result.rows[0][0], Value::Text("A".to_string()));
@@ -257,11 +283,23 @@ async fn test_distinct() {
         .execute("CREATE TABLE t (v INT)", vec![], None)
         .await
         .unwrap();
-    executor.execute("INSERT INTO t VALUES (1)", vec![], None).await.unwrap();
-    executor.execute("INSERT INTO t VALUES (1)", vec![], None).await.unwrap();
-    executor.execute("INSERT INTO t VALUES (2)", vec![], None).await.unwrap();
+    executor
+        .execute("INSERT INTO t VALUES (1)", vec![], None)
+        .await
+        .unwrap();
+    executor
+        .execute("INSERT INTO t VALUES (1)", vec![], None)
+        .await
+        .unwrap();
+    executor
+        .execute("INSERT INTO t VALUES (2)", vec![], None)
+        .await
+        .unwrap();
 
-    let result = executor.execute("SELECT DISTINCT v FROM t", vec![], None).await.unwrap();
+    let result = executor
+        .execute("SELECT DISTINCT v FROM t", vec![], None)
+        .await
+        .unwrap();
     assert_eq!(result.rows.len(), 2);
 }
 
@@ -288,17 +326,29 @@ async fn test_select_columns() {
     let db = Database::new();
     let executor = Arc::new(Executor::new(db));
 
-    executor.execute("CREATE TABLE users (id INT, name TEXT)", vec![], None).await.unwrap();
-    executor.execute("INSERT INTO users VALUES (1, 'Alice')", vec![], None).await.unwrap();
+    executor
+        .execute("CREATE TABLE users (id INT, name TEXT)", vec![], None)
+        .await
+        .unwrap();
+    executor
+        .execute("INSERT INTO users VALUES (1, 'Alice')", vec![], None)
+        .await
+        .unwrap();
 
     // Test specific columns
-    let result = executor.execute("SELECT name, id FROM users", vec![], None).await.unwrap();
+    let result = executor
+        .execute("SELECT name, id FROM users", vec![], None)
+        .await
+        .unwrap();
     assert_eq!(result.columns, vec!["name", "id"]);
     assert_eq!(result.rows[0][0], Value::Text("Alice".to_string()));
     assert_eq!(result.rows[0][1], Value::Int(1));
 
     // Test expressions in SELECT
-    let result = executor.execute("SELECT id + 10, UPPER(name) FROM users", vec![], None).await.unwrap();
+    let result = executor
+        .execute("SELECT id + 10, UPPER(name) FROM users", vec![], None)
+        .await
+        .unwrap();
     assert_eq!(result.rows[0][0], Value::Int(11));
     assert_eq!(result.rows[0][1], Value::Text("ALICE".to_string()));
 }

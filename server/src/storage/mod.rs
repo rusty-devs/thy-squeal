@@ -13,7 +13,7 @@ pub mod wal;
 pub use database::{Database, DatabaseState};
 pub use error::StorageError;
 pub use index::TableIndex;
-pub use persistence::{Persister, WalRecord};
+pub use persistence::WalRecord;
 pub use row::{Column, Row};
 pub use table::Table;
 pub use types::DataType;

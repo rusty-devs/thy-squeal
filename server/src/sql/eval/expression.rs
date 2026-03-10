@@ -2,11 +2,11 @@ pub mod binary;
 pub mod function;
 pub mod subquery;
 
-use crate::storage::{DatabaseState, Row, Table, Value};
 use super::super::ast::Expression;
 use super::super::error::{SqlError, SqlResult};
 use super::Evaluator;
 use super::column::resolve_column;
+use crate::storage::{DatabaseState, Row, Table, Value};
 
 pub fn evaluate_expression_joined(
     executor: &dyn Evaluator,
@@ -20,9 +20,13 @@ pub fn evaluate_expression_joined(
         Expression::Literal(v) => Ok(v.clone()),
         Expression::Placeholder(i) => {
             if *i == 0 {
-                return Err(SqlError::Runtime("Positional placeholder '?' was not correctly numbered".to_string()));
+                return Err(SqlError::Runtime(
+                    "Positional placeholder '?' was not correctly numbered".to_string(),
+                ));
             }
-            params.get(*i - 1).cloned().ok_or_else(|| SqlError::Runtime(format!("Missing parameter for placeholder ${}", i)))
+            params.get(*i - 1).cloned().ok_or_else(|| {
+                SqlError::Runtime(format!("Missing parameter for placeholder ${}", i))
+            })
         }
         Expression::Column(name) => {
             if let Ok(val) = resolve_column(name, contexts) {
@@ -34,16 +38,42 @@ pub fn evaluate_expression_joined(
 
             Err(SqlError::ColumnNotFound(name.clone()))
         }
-        Expression::Subquery(subquery) => {
-            subquery::evaluate_subquery(executor, subquery, contexts, params, outer_contexts, db_state)
-        }
+        Expression::Subquery(subquery) => subquery::evaluate_subquery(
+            executor,
+            subquery,
+            contexts,
+            params,
+            outer_contexts,
+            db_state,
+        ),
         Expression::BinaryOp(left, op, right) => {
-            let l = evaluate_expression_joined(executor, left, contexts, params, outer_contexts, db_state)?;
-            let r = evaluate_expression_joined(executor, right, contexts, params, outer_contexts, db_state)?;
+            let l = evaluate_expression_joined(
+                executor,
+                left,
+                contexts,
+                params,
+                outer_contexts,
+                db_state,
+            )?;
+            let r = evaluate_expression_joined(
+                executor,
+                right,
+                contexts,
+                params,
+                outer_contexts,
+                db_state,
+            )?;
             binary::evaluate_binary_op(l, op, r)
         }
         Expression::ScalarFunc(sf) => {
-            let val = evaluate_expression_joined(executor, &sf.arg, contexts, params, outer_contexts, db_state)?;
+            let val = evaluate_expression_joined(
+                executor,
+                &sf.arg,
+                contexts,
+                params,
+                outer_contexts,
+                db_state,
+            )?;
             function::evaluate_scalar_func(&sf.name, val)
         }
         Expression::FunctionCall(_) => Err(SqlError::Runtime(

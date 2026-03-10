@@ -64,7 +64,10 @@ pub async fn restore(host: &str, port: u16, sql: &str) -> Result<()> {
     let result: QueryResponse = response.json().await?;
 
     if result.success {
-        println!("Restore completed successfully. Rows affected: {}", result.rows_affected);
+        println!(
+            "Restore completed successfully. Rows affected: {}",
+            result.rows_affected
+        );
     } else if let Some(error) = result.error {
         eprintln!("Restore error: {}", error);
     }

@@ -1,10 +1,10 @@
-use crate::storage::{Row, Table, Value, DatabaseState};
 use super::super::super::ast::{self, SelectStmt};
 use super::super::super::error::{SqlError, SqlResult};
-use super::super::super::eval::{evaluate_expression_joined, Evaluator};
-use super::super::QueryResult;
+use super::super::super::eval::{Evaluator, evaluate_expression_joined};
 use super::super::Executor;
+use super::super::QueryResult;
 use super::super::select::JoinedContext;
+use crate::storage::{DatabaseState, Row, Table, Value};
 
 impl Executor {
     pub(crate) async fn exec_select_with_grouping_owned(
@@ -17,7 +17,9 @@ impl Executor {
         tx_id: Option<&str>,
     ) -> SqlResult<QueryResult> {
         let base_table = if stmt.table.starts_with("information_schema.") {
-            return Err(SqlError::Runtime("GROUP BY with information_schema is not yet supported".to_string()));
+            return Err(SqlError::Runtime(
+                "GROUP BY with information_schema is not yet supported".to_string(),
+            ));
         } else {
             db_state.get_table(&stmt.table).unwrap()
         };
@@ -27,7 +29,9 @@ impl Executor {
             // Global aggregation
             let eval_contexts: Vec<Vec<(&Table, Option<&str>, &Row)>> = matched_rows
                 .iter()
-                .map(|ctx: &JoinedContext<'_>| ctx.iter().map(|(t, a, r)| (*t, a.as_deref(), r)).collect())
+                .map(|ctx: &JoinedContext<'_>| {
+                    ctx.iter().map(|(t, a, r)| (*t, a.as_deref(), r)).collect()
+                })
                 .collect();
 
             let mut row_values = Vec::new();
@@ -59,8 +63,14 @@ impl Executor {
             }
 
             let include_row = if let Some(ref having_cond) = stmt.having {
-                self.evaluate_having_joined(having_cond, &eval_contexts, params, outer_contexts, db_state)
-                    .await?
+                self.evaluate_having_joined(
+                    having_cond,
+                    &eval_contexts,
+                    params,
+                    outer_contexts,
+                    db_state,
+                )
+                .await?
             } else {
                 true
             };
@@ -73,7 +83,8 @@ impl Executor {
             let mut groups: std::collections::HashMap<Vec<Value>, Vec<JoinedContext<'_>>> =
                 std::collections::HashMap::new();
             for ctx in matched_rows {
-                let eval_ctx: Vec<(&Table, Option<&str>, &Row)> = ctx.iter().map(|(t, a, r)| (*t, a.as_deref(), r)).collect();
+                let eval_ctx: Vec<(&Table, Option<&str>, &Row)> =
+                    ctx.iter().map(|(t, a, r)| (*t, a.as_deref(), r)).collect();
                 let mut group_key = Vec::new();
                 for gb_expr in &stmt.group_by {
                     group_key.push(evaluate_expression_joined(
@@ -89,10 +100,13 @@ impl Executor {
             }
 
             for (_key, group_owned_contexts) in groups {
-                let group_eval_contexts: Vec<Vec<(&Table, Option<&str>, &Row)>> = group_owned_contexts
-                    .iter()
-                    .map(|ctx: &JoinedContext<'_>| ctx.iter().map(|(t, a, r)| (*t, a.as_deref(), r)).collect())
-                    .collect();
+                let group_eval_contexts: Vec<Vec<(&Table, Option<&str>, &Row)>> =
+                    group_owned_contexts
+                        .iter()
+                        .map(|ctx: &JoinedContext<'_>| {
+                            ctx.iter().map(|(t, a, r)| (*t, a.as_deref(), r)).collect()
+                        })
+                        .collect();
 
                 let include_group = if let Some(ref having_cond) = stmt.having {
                     self.evaluate_having_joined(
@@ -164,10 +178,22 @@ impl Executor {
         match cond {
             ast::Condition::Comparison(left, op, right) => {
                 let left_val = self
-                    .evaluate_having_expression_joined(left, contexts, params, outer_contexts, db_state)
+                    .evaluate_having_expression_joined(
+                        left,
+                        contexts,
+                        params,
+                        outer_contexts,
+                        db_state,
+                    )
                     .await?;
                 let right_val = self
-                    .evaluate_having_expression_joined(right, contexts, params, outer_contexts, db_state)
+                    .evaluate_having_expression_joined(
+                        right,
+                        contexts,
+                        params,
+                        outer_contexts,
+                        db_state,
+                    )
                     .await?;
 
                 match op {
@@ -189,8 +215,14 @@ impl Executor {
                 }
             }
             ast::Condition::Logical(left, op, right) => {
-                let l = Box::pin(self.evaluate_having_joined(left, contexts, params, outer_contexts, db_state))
-                    .await?;
+                let l = Box::pin(self.evaluate_having_joined(
+                    left,
+                    contexts,
+                    params,
+                    outer_contexts,
+                    db_state,
+                ))
+                .await?;
                 match op {
                     ast::LogicalOp::And => Ok(l
                         && Box::pin(self.evaluate_having_joined(
@@ -230,7 +262,13 @@ impl Executor {
                 != Value::Null),
             ast::Condition::InSubquery(expr, subquery) => {
                 let val = self
-                    .evaluate_having_expression_joined(expr, contexts, params, outer_contexts, db_state)
+                    .evaluate_having_expression_joined(
+                        expr,
+                        contexts,
+                        params,
+                        outer_contexts,
+                        db_state,
+                    )
                     .await?;
                 let mut combined_outer = outer_contexts.to_vec();
                 if let Some(first_ctx) = contexts.first() {
@@ -263,7 +301,14 @@ impl Executor {
             }
             ast::Expression::ScalarFunc(_sf) => {
                 if let Some(first_ctx) = contexts.first() {
-                    evaluate_expression_joined(self, expr, first_ctx, params, outer_contexts, db_state)
+                    evaluate_expression_joined(
+                        self,
+                        expr,
+                        first_ctx,
+                        params,
+                        outer_contexts,
+                        db_state,
+                    )
                 } else {
                     Ok(Value::Null)
                 }
@@ -291,14 +336,28 @@ impl Executor {
             }
             ast::Expression::Column(_) | ast::Expression::BinaryOp(_, _, _) => {
                 if let Some(first_ctx) = contexts.first() {
-                    evaluate_expression_joined(self, expr, first_ctx, params, outer_contexts, db_state)
+                    evaluate_expression_joined(
+                        self,
+                        expr,
+                        first_ctx,
+                        params,
+                        outer_contexts,
+                        db_state,
+                    )
                 } else {
                     Ok(Value::Null)
                 }
             }
             ast::Expression::Placeholder(_) => {
                 if let Some(first_ctx) = contexts.first() {
-                    evaluate_expression_joined(self, expr, first_ctx, params, outer_contexts, db_state)
+                    evaluate_expression_joined(
+                        self,
+                        expr,
+                        first_ctx,
+                        params,
+                        outer_contexts,
+                        db_state,
+                    )
                 } else {
                     Ok(Value::Null)
                 }

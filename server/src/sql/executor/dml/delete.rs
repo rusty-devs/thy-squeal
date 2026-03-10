@@ -1,8 +1,8 @@
-use crate::storage::{Value, WalRecord};
 use super::super::super::ast::DeleteStmt;
 use super::super::super::error::{SqlError, SqlResult};
-use super::super::super::eval::{evaluate_condition_joined, Evaluator};
-use super::super::{QueryResult, Executor};
+use super::super::super::eval::{Evaluator, evaluate_condition_joined};
+use super::super::{Executor, QueryResult};
+use crate::storage::{Value, WalRecord};
 
 impl Executor {
     pub(crate) async fn exec_delete(

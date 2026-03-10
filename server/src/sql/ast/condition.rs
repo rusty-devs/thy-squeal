@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
 use super::expression::Expression;
 use super::statements::SelectStmt;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Condition {

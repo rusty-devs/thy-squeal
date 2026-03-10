@@ -1,11 +1,8 @@
 use crate::sql::eval::{Evaluator, RecoveryEvaluator};
-use crate::storage::{DatabaseState, Table, WalRecord, StorageError};
+use crate::storage::{DatabaseState, StorageError, Table, WalRecord};
 use std::collections::HashMap;
 
-pub fn replay_logs(
-    state: &mut DatabaseState,
-    logs: Vec<WalRecord>,
-) -> Result<(), StorageError> {
+pub fn replay_logs(state: &mut DatabaseState, logs: Vec<WalRecord>) -> Result<(), StorageError> {
     if logs.is_empty() {
         return Ok(());
     }
@@ -94,10 +91,7 @@ pub fn apply_record(
             }
         }
         WalRecord::Update {
-            table,
-            id,
-            values,
-            ..
+            table, id, values, ..
         } => {
             let db_state = state.clone();
             if let Some(t) = state.get_table_mut(&table) {

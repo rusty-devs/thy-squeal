@@ -1,7 +1,7 @@
-use crate::storage::{DatabaseState, TableIndex, Value};
 use super::super::ast::{self, SelectStmt};
 use super::super::error::{SqlError, SqlResult};
-use super::{QueryResult, Executor};
+use super::{Executor, QueryResult};
+use crate::storage::{DatabaseState, TableIndex, Value};
 
 impl Executor {
     pub(crate) async fn exec_explain(
@@ -101,7 +101,10 @@ impl Executor {
             plan.push(vec![
                 Value::Text("LIMIT".to_string()),
                 Value::Text("SLICE".to_string()),
-                Value::Text(format!("count: {}, offset: {:?}", limit.count, limit.offset)),
+                Value::Text(format!(
+                    "count: {}, offset: {:?}",
+                    limit.count, limit.offset
+                )),
             ]);
         }
 

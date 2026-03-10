@@ -1,7 +1,7 @@
+use super::common::setup;
 use crate::sql::Executor;
 use crate::storage::Database;
 use std::sync::Arc;
-use super::common::setup;
 
 #[tokio::test]
 async fn test_info_schema() {
@@ -9,8 +9,18 @@ async fn test_info_schema() {
     let db = Database::new();
     let executor = Arc::new(Executor::new(db));
 
-    executor.execute("CREATE TABLE info_test (id INT, name TEXT)", vec![], None).await.unwrap();
-    executor.execute("CREATE UNIQUE INDEX idx_info_id ON info_test (id)", vec![], None).await.unwrap();
+    executor
+        .execute("CREATE TABLE info_test (id INT, name TEXT)", vec![], None)
+        .await
+        .unwrap();
+    executor
+        .execute(
+            "CREATE UNIQUE INDEX idx_info_id ON info_test (id)",
+            vec![],
+            None,
+        )
+        .await
+        .unwrap();
 
     // 1. Check tables
     let r = executor.execute("SELECT table_name, table_type FROM information_schema.tables WHERE table_name = 'info_test'", vec![], None).await.unwrap();

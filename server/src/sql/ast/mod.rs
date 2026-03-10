@@ -40,7 +40,16 @@ impl SqlStmt {
             SqlStmt::CreateIndex(ci) => ci.resolve_placeholders(&mut counter),
             SqlStmt::Insert(i) => i.resolve_placeholders(&mut counter),
             // No placeholders in these statements
-            SqlStmt::CreateTable(_) | SqlStmt::AlterTable(_) | SqlStmt::DropTable(_) | SqlStmt::Search(_) | SqlStmt::Begin | SqlStmt::Commit | SqlStmt::Rollback | SqlStmt::Prepare(_) | SqlStmt::Execute(_) | SqlStmt::Deallocate(_) => {}
+            SqlStmt::CreateTable(_)
+            | SqlStmt::AlterTable(_)
+            | SqlStmt::DropTable(_)
+            | SqlStmt::Search(_)
+            | SqlStmt::Begin
+            | SqlStmt::Commit
+            | SqlStmt::Rollback
+            | SqlStmt::Prepare(_)
+            | SqlStmt::Execute(_)
+            | SqlStmt::Deallocate(_) => {}
         }
     }
 }

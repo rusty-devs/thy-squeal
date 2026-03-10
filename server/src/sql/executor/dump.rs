@@ -1,5 +1,5 @@
-use super::{Executor, QueryResult};
 use super::super::error::SqlResult;
+use super::{Executor, QueryResult};
 use crate::storage::TableIndex;
 
 impl Executor {
@@ -13,12 +13,14 @@ impl Executor {
 
         for (table_name, table) in &state.tables {
             sql.push_str(&format!("-- Table: {}\n", table_name));
-            
+
             // 1. CREATE TABLE
             sql.push_str("CREATE TABLE ");
             sql.push_str(table_name);
             sql.push_str(" (");
-            let cols: Vec<String> = table.columns.iter()
+            let cols: Vec<String> = table
+                .columns
+                .iter()
                 .map(|c| format!("{} {}", c.name, c.data_type.to_sql()))
                 .collect();
             sql.push_str(&cols.join(", "));
@@ -31,20 +33,24 @@ impl Executor {
                     TableIndex::BTree { .. } => "BTREE",
                     TableIndex::Hash { .. } => "HASH",
                 };
-                
+
                 let exprs = index.expressions();
                 let expr_strs: Vec<String> = exprs.iter().map(|e| e.to_sql()).collect();
-                
+
                 let mut create_idx = format!(
                     "CREATE {}INDEX {} ON {} ({}) USING {}",
-                    unique_str, index_name, table_name, expr_strs.join(", "), type_str
+                    unique_str,
+                    index_name,
+                    table_name,
+                    expr_strs.join(", "),
+                    type_str
                 );
 
                 if let Some(cond) = index.where_clause() {
                     create_idx.push_str(" WHERE ");
                     create_idx.push_str(&cond.to_sql());
                 }
-                
+
                 sql.push_str(&create_idx);
                 sql.push_str(";\n");
             }
@@ -71,7 +77,7 @@ impl Executor {
             rows_affected: 0,
             transaction_id: None,
         };
-        
+
         let mut total_affected = 0;
         let mut current_stmt = String::new();
 
@@ -94,7 +100,7 @@ impl Executor {
                 current_stmt.clear();
             }
         }
-        
+
         last_res.rows_affected = total_affected;
         Ok(last_res)
     }

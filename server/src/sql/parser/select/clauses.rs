@@ -1,5 +1,5 @@
 use super::super::super::ast::{Expression, LimitClause, Order, OrderByItem};
-use super::super::super::error::{SqlError, SqlResult};
+use super::super::super::error::SqlResult;
 use super::super::super::parser::Rule;
 use super::super::expr::parse_expression;
 
@@ -28,10 +28,10 @@ pub fn parse_order_by(pair: pest::iterators::Pair<Rule>) -> SqlResult<Vec<OrderB
             let mut item_inner = item.into_inner();
             let expr = parse_expression(item_inner.next().unwrap())?;
             let mut order = Order::Asc;
-            if let Some(o) = item_inner.next() {
-                if o.as_rule() == Rule::KW_DESC {
-                    order = Order::Desc;
-                }
+            if let Some(o) = item_inner.next()
+                && o.as_rule() == Rule::KW_DESC
+            {
+                order = Order::Desc;
             }
             order_by.push(OrderByItem { expr, order });
         }
@@ -49,7 +49,14 @@ pub fn parse_limit(pair: pest::iterators::Pair<Rule>) -> SqlResult<LimitClause> 
         let mut offset_inner = offset_pair.into_inner();
         // Skip KW_OFFSET
         let _ = offset_inner.next();
-        offset = Some(offset_inner.next().unwrap().as_str().parse::<usize>().unwrap());
+        offset = Some(
+            offset_inner
+                .next()
+                .unwrap()
+                .as_str()
+                .parse::<usize>()
+                .unwrap(),
+        );
     }
     Ok(LimitClause { count, offset })
 }

@@ -1,6 +1,6 @@
 pub mod basic;
+pub mod compatibility;
 pub mod index;
 pub mod joins;
-pub mod subqueries;
 pub mod prepared;
-pub mod compatibility;
+pub mod subqueries;

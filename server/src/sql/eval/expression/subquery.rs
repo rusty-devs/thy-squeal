@@ -1,7 +1,7 @@
-use crate::storage::{DatabaseState, Row, Table, Value};
 use super::super::super::ast::SelectStmt;
 use super::super::super::error::{SqlError, SqlResult};
 use super::super::Evaluator;
+use crate::storage::{DatabaseState, Row, Table, Value};
 
 pub fn evaluate_subquery(
     executor: &dyn Evaluator,
@@ -20,7 +20,7 @@ pub fn evaluate_subquery(
         params,
         db_state,
     ))?;
-    
+
     if result.rows.is_empty() {
         Ok(Value::Null)
     } else if result.rows.len() > 1 {

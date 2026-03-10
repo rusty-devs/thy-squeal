@@ -35,21 +35,23 @@ pub fn parse_insert(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
         return Err(SqlError::Parse("Missing values".to_string()));
     }
 
-    Ok(SqlStmt::Insert(InsertStmt { table, columns, values }))
+    Ok(SqlStmt::Insert(InsertStmt {
+        table,
+        columns,
+        values,
+    }))
 }
 
-pub fn parse_value_list(
-    pair: pest::iterators::Pair<Rule>,
-) -> SqlResult<Vec<Expression>> {
+pub fn parse_value_list(pair: pest::iterators::Pair<Rule>) -> SqlResult<Vec<Expression>> {
     let inner = pair.into_inner();
     let mut values = Vec::new();
     for p in inner {
         match p.as_rule() {
-            Rule::literal 
-            | Rule::string_literal 
-            | Rule::number_literal 
-            | Rule::boolean_literal 
-            | Rule::KW_NULL 
+            Rule::literal
+            | Rule::string_literal
+            | Rule::number_literal
+            | Rule::boolean_literal
+            | Rule::KW_NULL
             | Rule::placeholder => {
                 values.push(parse_any_expression(p)?);
             }

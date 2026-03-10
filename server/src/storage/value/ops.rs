@@ -1,6 +1,6 @@
+use super::Value;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
-use super::Value;
 
 impl Value {
     pub fn variant_rank(&self) -> u8 {

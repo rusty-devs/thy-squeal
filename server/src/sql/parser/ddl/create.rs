@@ -36,7 +36,7 @@ pub fn parse_column_def(pair: pest::iterators::Pair<Rule>) -> SqlResult<Column> 
         .ok_or_else(|| SqlError::Parse("Missing column type".to_string()))?
         .as_str()
         .to_uppercase();
-    
+
     let mut is_auto_increment = false;
     if type_str == "SERIAL" {
         is_auto_increment = true;

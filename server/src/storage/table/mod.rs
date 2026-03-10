@@ -2,16 +2,15 @@ pub mod index;
 pub mod mutation;
 pub mod search;
 
-use crate::storage::DatabaseState;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use super::error::StorageError;
-use super::search::SearchIndex;
-use super::value::Value;
 use super::index::TableIndex;
 use super::row::{Column, Row};
+use super::search::SearchIndex;
+use super::value::Value;
 
 pub struct Table {
     pub name: String,

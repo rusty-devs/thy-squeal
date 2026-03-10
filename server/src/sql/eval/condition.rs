@@ -1,8 +1,8 @@
-use crate::storage::{DatabaseState, Row, Table, Value};
 use super::super::ast::{ComparisonOp, Condition, LogicalOp};
 use super::super::error::{SqlError, SqlResult};
 use super::Evaluator;
 use super::expression::evaluate_expression_joined;
+use crate::storage::{DatabaseState, Row, Table, Value};
 
 pub fn evaluate_condition_joined(
     executor: &dyn Evaluator,
@@ -14,10 +14,26 @@ pub fn evaluate_condition_joined(
 ) -> SqlResult<bool> {
     match cond {
         Condition::Comparison(left, op, right) => {
-            let left_val =
-                evaluate_expression_joined(executor, left, contexts, params, outer_contexts, db_state)?;
-            let right_val =
-                evaluate_expression_joined(executor, right, contexts, params, outer_contexts, db_state)?;
+            let left_val = evaluate_expression_joined(
+                executor,
+                left,
+                contexts,
+                params,
+                outer_contexts,
+                db_state,
+            )?;
+            let right_val = evaluate_expression_joined(
+                executor,
+                right,
+                contexts,
+                params,
+                outer_contexts,
+                db_state,
+            )?;
+
+            if matches!(left_val, Value::Null) || matches!(right_val, Value::Null) {
+                return Ok(false);
+            }
 
             match op {
                 ComparisonOp::Eq => Ok(left_val == right_val),
@@ -47,15 +63,36 @@ pub fn evaluate_condition_joined(
             }
         }
         Condition::IsNull(expr) => {
-            let val = evaluate_expression_joined(executor, expr, contexts, params, outer_contexts, db_state)?;
+            let val = evaluate_expression_joined(
+                executor,
+                expr,
+                contexts,
+                params,
+                outer_contexts,
+                db_state,
+            )?;
             Ok(matches!(val, Value::Null))
         }
         Condition::IsNotNull(expr) => {
-            let val = evaluate_expression_joined(executor, expr, contexts, params, outer_contexts, db_state)?;
+            let val = evaluate_expression_joined(
+                executor,
+                expr,
+                contexts,
+                params,
+                outer_contexts,
+                db_state,
+            )?;
             Ok(!matches!(val, Value::Null))
         }
         Condition::InSubquery(expr, subquery) => {
-            let val = evaluate_expression_joined(executor, expr, contexts, params, outer_contexts, db_state)?;
+            let val = evaluate_expression_joined(
+                executor,
+                expr,
+                contexts,
+                params,
+                outer_contexts,
+                db_state,
+            )?;
             let mut combined_outer = outer_contexts.to_vec();
             combined_outer.extend_from_slice(contexts);
 
@@ -73,24 +110,50 @@ pub fn evaluate_condition_joined(
             Ok(false)
         }
         Condition::Logical(left, op, right) => {
-            let l = evaluate_condition_joined(executor, left, contexts, params, outer_contexts, db_state)?;
+            let l = evaluate_condition_joined(
+                executor,
+                left,
+                contexts,
+                params,
+                outer_contexts,
+                db_state,
+            )?;
             match op {
                 LogicalOp::And => {
                     if !l {
                         return Ok(false);
                     }
-                    evaluate_condition_joined(executor, right, contexts, params, outer_contexts, db_state)
+                    evaluate_condition_joined(
+                        executor,
+                        right,
+                        contexts,
+                        params,
+                        outer_contexts,
+                        db_state,
+                    )
                 }
                 LogicalOp::Or => {
                     if l {
                         return Ok(true);
                     }
-                    evaluate_condition_joined(executor, right, contexts, params, outer_contexts, db_state)
+                    evaluate_condition_joined(
+                        executor,
+                        right,
+                        contexts,
+                        params,
+                        outer_contexts,
+                        db_state,
+                    )
                 }
             }
         }
-        Condition::Not(cond) => {
-            Ok(!evaluate_condition_joined(executor, cond, contexts, params, outer_contexts, db_state)?)
-        }
+        Condition::Not(cond) => Ok(!evaluate_condition_joined(
+            executor,
+            cond,
+            contexts,
+            params,
+            outer_contexts,
+            db_state,
+        )?),
     }
 }

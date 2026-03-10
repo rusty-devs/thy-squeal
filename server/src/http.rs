@@ -59,7 +59,10 @@ impl HttpServer {
         State(executor): State<Arc<Executor>>,
         Json(payload): Json<QueryRequest>,
     ) -> impl IntoResponse {
-        match executor.execute(&payload.sql, vec![], payload.transaction_id).await {
+        match executor
+            .execute(&payload.sql, vec![], payload.transaction_id)
+            .await
+        {
             Ok(result) => (StatusCode::OK, Json(Self::map_result(result, None))),
             Err(e) => {
                 error!("Query error: {:?}", e);
@@ -79,9 +82,7 @@ impl HttpServer {
         }
     }
 
-    async fn dump(
-        State(executor): State<Arc<Executor>>,
-    ) -> impl IntoResponse {
+    async fn dump(State(executor): State<Arc<Executor>>) -> impl IntoResponse {
         match executor.dump().await {
             Ok(sql) => (StatusCode::OK, sql),
             Err(e) => {
@@ -91,10 +92,7 @@ impl HttpServer {
         }
     }
 
-    async fn restore(
-        State(executor): State<Arc<Executor>>,
-        body: String,
-    ) -> impl IntoResponse {
+    async fn restore(State(executor): State<Arc<Executor>>, body: String) -> impl IntoResponse {
         match executor.execute_batch(&body).await {
             Ok(result) => (StatusCode::OK, Json(Self::map_result(result, None))),
             Err(e) => {

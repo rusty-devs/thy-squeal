@@ -22,9 +22,13 @@ async fn test_subqueries() {
 
     // Subquery in WHERE (IN)
     let result = executor
-            .execute("SELECT name FROM users WHERE id IN (SELECT id FROM users WHERE name = 'Bob')", vec![], None)
-            .await
-            .unwrap();
+        .execute(
+            "SELECT name FROM users WHERE id IN (SELECT id FROM users WHERE name = 'Bob')",
+            vec![],
+            None,
+        )
+        .await
+        .unwrap();
     assert_eq!(result.rows.len(), 1);
     assert_eq!(result.rows[0][0], Value::Text("Bob".to_string()));
 

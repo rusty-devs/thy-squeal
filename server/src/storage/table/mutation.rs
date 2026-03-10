@@ -1,4 +1,4 @@
-use crate::sql::eval::{evaluate_condition_joined, Evaluator};
+use crate::sql::eval::{Evaluator, evaluate_condition_joined};
 use crate::storage::DatabaseState;
 use uuid::Uuid;
 
@@ -34,16 +34,25 @@ impl Table {
             // Check partial condition
             if let Some(cond) = index.where_clause() {
                 let context = [(table_ref, None, &row)];
-                if !evaluate_condition_joined(evaluator, &cond, &context, &[], &[], db_state).map_err(
-                    |e| StorageError::PersistenceError(format!("Index where clause evaluation error: {:?}", e)),
-                )? {
+                if !evaluate_condition_joined(evaluator, &cond, &context, &[], &[], db_state)
+                    .map_err(|e| {
+                        StorageError::PersistenceError(format!(
+                            "Index where clause evaluation error: {:?}",
+                            e
+                        ))
+                    })?
+                {
                     continue;
                 }
             }
 
             if index.is_unique() {
-                let key =
-                    table_ref.extract_key_from_values(evaluator, &values, &index.expressions(), db_state)?;
+                let key = table_ref.extract_key_from_values(
+                    evaluator,
+                    &values,
+                    &index.expressions(),
+                    db_state,
+                )?;
                 if index.get(&key).is_some_and(|ids| !ids.is_empty()) {
                     return Err(StorageError::DuplicateKey(format!("{:?}", key)));
                 }
@@ -56,16 +65,25 @@ impl Table {
             // Check partial condition
             if let Some(cond) = index.where_clause() {
                 let context = [(table_ref, None, &row)];
-                if !evaluate_condition_joined(evaluator, &cond, &context, &[], &[], db_state).map_err(
-                    |e| StorageError::PersistenceError(format!("Index where clause evaluation error: {:?}", e)),
-                )? {
+                if !evaluate_condition_joined(evaluator, &cond, &context, &[], &[], db_state)
+                    .map_err(|e| {
+                        StorageError::PersistenceError(format!(
+                            "Index where clause evaluation error: {:?}",
+                            e
+                        ))
+                    })?
+                {
                     index_keys.push(None);
                     continue;
                 }
             }
 
-            let key =
-                table_ref.extract_key_from_values(evaluator, &values, &index.expressions(), db_state)?;
+            let key = table_ref.extract_key_from_values(
+                evaluator,
+                &values,
+                &index.expressions(),
+                db_state,
+            )?;
             index_keys.push(Some(key));
         }
 
@@ -119,16 +137,25 @@ impl Table {
                 // Check if new row matches partial condition
                 if let Some(cond) = index.where_clause() {
                     let context = [(table_ref, None, &new_row)];
-                    if !evaluate_condition_joined(evaluator, &cond, &context, &[], &[], db_state).map_err(
-                        |e| StorageError::PersistenceError(format!("Index where clause evaluation error: {:?}", e)),
-                    )? {
+                    if !evaluate_condition_joined(evaluator, &cond, &context, &[], &[], db_state)
+                        .map_err(|e| {
+                            StorageError::PersistenceError(format!(
+                                "Index where clause evaluation error: {:?}",
+                                e
+                            ))
+                        })?
+                    {
                         continue;
                     }
                 }
 
                 if index.is_unique() {
-                    let new_key =
-                        table_ref.extract_key_from_values(evaluator, &values, &index.expressions(), db_state)?;
+                    let new_key = table_ref.extract_key_from_values(
+                        evaluator,
+                        &values,
+                        &index.expressions(),
+                        db_state,
+                    )?;
                     let old_key = table_ref.extract_key_from_values(
                         evaluator,
                         &old_values,
@@ -148,17 +175,27 @@ impl Table {
                 let cond = index.where_clause();
                 let old_match = if let Some(ref c) = cond {
                     let context = [(table_ref, None, &old_row)];
-                    evaluate_condition_joined(evaluator, c, &context, &[], &[], db_state).map_err(|e| {
-                        StorageError::PersistenceError(format!("Index where clause evaluation error: {:?}", e))
-                    })?
+                    evaluate_condition_joined(evaluator, c, &context, &[], &[], db_state).map_err(
+                        |e| {
+                            StorageError::PersistenceError(format!(
+                                "Index where clause evaluation error: {:?}",
+                                e
+                            ))
+                        },
+                    )?
                 } else {
                     true
                 };
                 let new_match = if let Some(ref c) = cond {
                     let context = [(table_ref, None, &new_row)];
-                    evaluate_condition_joined(evaluator, c, &context, &[], &[], db_state).map_err(|e| {
-                        StorageError::PersistenceError(format!("Index where clause evaluation error: {:?}", e))
-                    })?
+                    evaluate_condition_joined(evaluator, c, &context, &[], &[], db_state).map_err(
+                        |e| {
+                            StorageError::PersistenceError(format!(
+                                "Index where clause evaluation error: {:?}",
+                                e
+                            ))
+                        },
+                    )?
                 } else {
                     true
                 };
@@ -169,8 +206,12 @@ impl Table {
                     &index.expressions(),
                     db_state,
                 )?;
-                let new_key =
-                    table_ref.extract_key_from_values(evaluator, &values, &index.expressions(), db_state)?;
+                let new_key = table_ref.extract_key_from_values(
+                    evaluator,
+                    &values,
+                    &index.expressions(),
+                    db_state,
+                )?;
                 index_updates.push((old_match, new_match, old_key, new_key));
             }
 
@@ -224,16 +265,25 @@ impl Table {
                 // Check partial condition
                 if let Some(cond) = index.where_clause() {
                     let context = [(table_ref, None, &row)];
-                    if !evaluate_condition_joined(evaluator, &cond, &context, &[], &[], db_state).map_err(
-                        |e| StorageError::PersistenceError(format!("Index where clause evaluation error: {:?}", e)),
-                    )? {
+                    if !evaluate_condition_joined(evaluator, &cond, &context, &[], &[], db_state)
+                        .map_err(|e| {
+                            StorageError::PersistenceError(format!(
+                                "Index where clause evaluation error: {:?}",
+                                e
+                            ))
+                        })?
+                    {
                         index_to_remove.push(None);
                         continue;
                     }
                 }
 
-                let key =
-                    table_ref.extract_key_from_values(evaluator, &values, &index.expressions(), db_state)?;
+                let key = table_ref.extract_key_from_values(
+                    evaluator,
+                    &values,
+                    &index.expressions(),
+                    db_state,
+                )?;
                 index_to_remove.push(Some(key));
             }
 

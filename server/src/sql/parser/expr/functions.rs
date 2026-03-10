@@ -1,4 +1,6 @@
-use super::super::super::ast::{AggregateType, Expression, FunctionCall, ScalarFuncType, ScalarFunction};
+use super::super::super::ast::{
+    AggregateType, Expression, FunctionCall, ScalarFuncType, ScalarFunction,
+};
 use super::super::super::error::{SqlError, SqlResult};
 use super::super::Rule;
 use super::parse_expression;

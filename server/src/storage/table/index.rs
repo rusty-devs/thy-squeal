@@ -1,12 +1,12 @@
-use crate::sql::ast::{Condition, Expression};
-use crate::sql::eval::{evaluate_condition_joined, evaluate_expression_joined, Evaluator};
-use crate::storage::DatabaseState;
-use std::collections::HashMap;
 use super::super::error::StorageError;
-use super::super::value::Value;
 use super::super::index::TableIndex;
 use super::super::row::Row;
+use super::super::value::Value;
 use super::Table;
+use crate::sql::ast::{Condition, Expression};
+use crate::sql::eval::{Evaluator, evaluate_condition_joined, evaluate_expression_joined};
+use crate::storage::DatabaseState;
+use std::collections::HashMap;
 
 impl Table {
     #[allow(clippy::too_many_arguments)]
@@ -52,9 +52,14 @@ impl Table {
             // Check partial index condition
             if let Some(ref c) = cond {
                 let context = [(table_ref, None, row)];
-                if !evaluate_condition_joined(evaluator, c, &context, &[], &[], db_state).map_err(|e| {
-                    StorageError::PersistenceError(format!("Index where clause evaluation error: {:?}", e))
-                })? {
+                if !evaluate_condition_joined(evaluator, c, &context, &[], &[], db_state).map_err(
+                    |e| {
+                        StorageError::PersistenceError(format!(
+                            "Index where clause evaluation error: {:?}",
+                            e
+                        ))
+                    },
+                )? {
                     continue;
                 }
             }
@@ -92,9 +97,13 @@ impl Table {
         let context = [(self, None, &row)];
 
         for expr in expressions {
-            let val = evaluate_expression_joined(evaluator, expr, &context, &[], &[], db_state).map_err(
-                |e| StorageError::PersistenceError(format!("Index expression evaluation error: {:?}", e)),
-            )?;
+            let val = evaluate_expression_joined(evaluator, expr, &context, &[], &[], db_state)
+                .map_err(|e| {
+                    StorageError::PersistenceError(format!(
+                        "Index expression evaluation error: {:?}",
+                        e
+                    ))
+                })?;
             key.push(val);
         }
         Ok(key)

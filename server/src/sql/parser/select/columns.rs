@@ -35,12 +35,15 @@ pub fn parse_column_expr(pair: pest::iterators::Pair<Rule>) -> SqlResult<SelectC
 }
 
 pub fn parse_alias(pair: pest::iterators::Pair<Rule>) -> SqlResult<String> {
-    let inner = pair.into_inner().next().unwrap();
-    if inner.as_rule() == Rule::identifier {
-        Ok(inner.as_str().trim().to_string())
+    let mut inner = pair.clone().into_inner();
+    let first = inner.next().unwrap();
+    if first.as_rule() == Rule::identifier {
+        Ok(first.as_str().trim().to_string())
     } else {
-        // Skip KW_AS
-        let id = inner.into_inner().next().unwrap();
+        // Rule::KW_AS
+        let id = inner
+            .next()
+            .ok_or_else(|| SqlError::Parse("Missing identifier after AS".to_string()))?;
         Ok(id.as_str().trim().to_string())
     }
 }

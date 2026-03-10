@@ -1,12 +1,9 @@
+use super::common::setup;
 use crate::{http::create_app, sql::Executor};
-use axum::{
-    body::Body,
-    http::Request,
-};
+use axum::{body::Body, http::Request};
 use serde_json::{Value, json};
 use std::sync::Arc;
 use tower::ServiceExt; // for `oneshot`
-use super::common::setup;
 
 #[tokio::test]
 async fn test_transactions() {
@@ -164,8 +161,7 @@ async fn test_rollback() {
                 .uri("/_query")
                 .header("Content-Type", "application/json")
                 .body(Body::from(
-                    json!({"sql": "INSERT INTO t VALUES (1)", "transaction_id": tx_id})
-                        .to_string(),
+                    json!({"sql": "INSERT INTO t VALUES (1)", "transaction_id": tx_id}).to_string(),
                 ))
                 .unwrap(),
         )
