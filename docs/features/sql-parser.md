@@ -47,6 +47,7 @@ The parser is decomposed into submodules for maintainability:
 
 ### Data Definition Language (DDL)
 - `CREATE TABLE ... (columns, types [AUTO_INCREMENT | PRIMARY KEY])`
+- `ALTER TABLE table [ADD COLUMN col def | DROP COLUMN col | RENAME COLUMN col TO new | RENAME TO new_table]`
 - `DROP TABLE`
 - `CREATE [UNIQUE] INDEX [name] ON [table] (expr1, expr2, ...) [USING BTREE|HASH] [WHERE condition]`
 

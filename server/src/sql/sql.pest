@@ -1,7 +1,7 @@
 // thy-squeal SQL Grammar
 
 // Main statement
-statement = { SOI ~ (explain_stmt | search_stmt | select_stmt | insert_stmt | update_stmt | delete_stmt | create_table_stmt | drop_table_stmt | create_index_stmt | begin_stmt | commit_stmt | rollback_stmt | prepare_stmt | execute_stmt | deallocate_stmt) ~ ";"? ~ EOI }
+statement = { SOI ~ (explain_stmt | search_stmt | select_stmt | insert_stmt | update_stmt | delete_stmt | create_table_stmt | alter_table_stmt | drop_table_stmt | create_index_stmt | begin_stmt | commit_stmt | rollback_stmt | prepare_stmt | execute_stmt | deallocate_stmt) ~ ";"? ~ EOI }
 
 explain_stmt = { KW_EXPLAIN ~ select_stmt_inner }
 
@@ -60,6 +60,13 @@ data_type = { "INTEGER" | "BIGINT" | "SMALLINT" | "INT" | "DOUBLE" | "REAL" | "F
 
 // DROP TABLE statement
 drop_table_stmt = { KW_DROP ~ KW_TABLE ~ table_name }
+
+// ALTER TABLE statement
+alter_table_stmt = { KW_ALTER ~ KW_TABLE ~ table_name ~ (alter_add_column | alter_drop_column | alter_rename_column | alter_rename_table) }
+alter_add_column = { KW_ADD ~ KW_COLUMN? ~ column_def }
+alter_drop_column = { KW_DROP ~ KW_COLUMN? ~ identifier }
+alter_rename_column = { KW_RENAME ~ KW_COLUMN? ~ identifier ~ KW_TO ~ identifier }
+alter_rename_table = { KW_RENAME ~ KW_TO ~ table_name }
 
 // CREATE INDEX statement
 create_index_stmt = { KW_CREATE ~ unique? ~ KW_INDEX ~ identifier ~ KW_ON ~ table_name ~ "(" ~ index_expression_list ~ ")" ~ index_type_clause? ~ where_clause? }
@@ -133,7 +140,8 @@ keyword = {
     KW_CREATE | KW_TABLE | KW_DROP | KW_GROUP | KW_BY | KW_ORDER | KW_HAVING | KW_LIMIT | KW_OFFSET | KW_ASC | KW_DESC |
     KW_DISTINCT | KW_AS | KW_AND | KW_OR | KW_NOT | KW_NULL | KW_IS | KW_TRUE | KW_FALSE |
     KW_COUNT | KW_SUM | KW_AVG | KW_MIN | KW_MAX | KW_IN | KW_BEGIN | KW_COMMIT | KW_ROLLBACK | KW_START | KW_TRANSACTION |
-    KW_PREPARE | KW_EXECUTE | KW_DEALLOCATE | KW_USING | KW_AUTO_INCREMENT | KW_PRIMARY | KW_KEY
+    KW_PREPARE | KW_EXECUTE | KW_DEALLOCATE | KW_USING | KW_AUTO_INCREMENT | KW_PRIMARY | KW_KEY |
+    KW_ALTER | KW_ADD | KW_COLUMN | KW_RENAME | KW_TO
 }
 
 // Keywords (reserved)
@@ -191,6 +199,11 @@ KW_USING    = @{ ^"USING" ~ !id_char }
 KW_AUTO_INCREMENT = @{ ^"AUTO_INCREMENT" ~ !id_char }
 KW_PRIMARY  = @{ ^"PRIMARY" ~ !id_char }
 KW_KEY      = @{ ^"KEY" ~ !id_char }
+KW_ALTER    = @{ ^"ALTER" ~ !id_char }
+KW_ADD      = @{ ^"ADD" ~ !id_char }
+KW_COLUMN   = @{ ^"COLUMN" ~ !id_char }
+KW_RENAME   = @{ ^"RENAME" ~ !id_char }
+KW_TO       = @{ ^"TO" ~ !id_char }
 
 id_char = _{ ASCII_ALPHA | ASCII_DIGIT | "_" }
 

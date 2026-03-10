@@ -2,6 +2,7 @@
 
 ## [v0.5.0] - 2026-03-10
 ### Added
+- **ALTER TABLE**: Support for schema evolution via `ADD COLUMN`, `DROP COLUMN`, `RENAME COLUMN`, and `RENAME TO` (table renaming).
 - **AUTO_INCREMENT / SERIAL**: Automated ID generation for integer columns. Support for `SERIAL` shorthand and `AUTO_INCREMENT` column attribute.
 - **Enhanced information_schema**: Added `is_auto_increment` column to `information_schema.columns`.
 

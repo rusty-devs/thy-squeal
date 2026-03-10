@@ -35,6 +35,7 @@ pub fn replay_logs(
                 // Check if it's part of a transaction
                 let tx_id_opt = match &r {
                     WalRecord::CreateTable { tx_id, .. } => tx_id,
+                    WalRecord::AlterTable { tx_id, .. } => tx_id,
                     WalRecord::DropTable { tx_id, .. } => tx_id,
                     WalRecord::Insert { tx_id, .. } => tx_id,
                     WalRecord::Update { tx_id, .. } => tx_id,
@@ -65,6 +66,23 @@ pub fn apply_record(
     match record {
         WalRecord::CreateTable { name, columns, .. } => {
             state.tables.insert(name.clone(), Table::new(name, columns));
+        }
+        WalRecord::AlterTable { table, action, .. } => {
+            use crate::sql::ast::AlterAction;
+            if let Some(t) = state.get_table_mut(&table) {
+                match action {
+                    AlterAction::AddColumn(col) => t.add_column(col)?,
+                    AlterAction::DropColumn(name) => t.drop_column(&name)?,
+                    AlterAction::RenameColumn { old_name, new_name } => {
+                        t.rename_column(&old_name, &new_name)?
+                    }
+                    AlterAction::RenameTable(new_name) => {
+                        let mut t = state.tables.remove(&table).unwrap();
+                        t.rename_table(new_name.clone());
+                        state.tables.insert(new_name, t);
+                    }
+                }
+            }
         }
         WalRecord::DropTable { name, .. } => {
             state.tables.remove(&name);

@@ -26,6 +26,7 @@ pub fn parse(sql: &str) -> SqlResult<SqlStmt> {
                 Rule::update_stmt => dml::parse_update(inner),
                 Rule::delete_stmt => dml::parse_delete(inner),
                 Rule::create_table_stmt => ddl::parse_create_table(inner),
+                Rule::alter_table_stmt => ddl::parse_alter_table(inner),
                 Rule::drop_table_stmt => ddl::parse_drop_table(inner),
                 Rule::create_index_stmt => ddl::parse_create_index(inner),
                 Rule::explain_stmt => {

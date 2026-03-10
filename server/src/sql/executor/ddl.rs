@@ -1,4 +1,4 @@
-use super::super::ast::{CreateIndexStmt, CreateTableStmt, DropTableStmt, IndexType};
+use super::super::ast::{AlterAction, AlterTableStmt, CreateIndexStmt, CreateTableStmt, DropTableStmt, IndexType};
 use super::super::error::{SqlError, SqlResult};
 use super::{Executor, QueryResult};
 use crate::storage::{Table, WalRecord};
@@ -76,6 +76,61 @@ impl Executor {
             let mut db = self.db.write().await;
             db.drop_table(&stmt.name)?;
         }
+
+        Ok(QueryResult {
+            columns: vec![],
+            rows: vec![],
+            rows_affected: 0,
+            transaction_id: tx_id.map(|s| s.to_string()),
+        })
+    }
+
+    pub(crate) async fn exec_alter_table(
+        &self,
+        stmt: AlterTableStmt,
+        tx_id: Option<&str>,
+    ) -> SqlResult<QueryResult> {
+        // Log to WAL
+        {
+            let db = self.db.read().await;
+            db.log_operation(&WalRecord::AlterTable {
+                tx_id: tx_id.map(|s| s.to_string()),
+                table: stmt.table.clone(),
+                action: stmt.action.clone(),
+            })
+            .map_err(|e| SqlError::Storage(e.to_string()))?;
+        }
+
+        self.mutate_state(tx_id, |state| {
+            if state.get_table(&stmt.table).is_none() {
+                return Err(SqlError::TableNotFound(stmt.table.clone()));
+            }
+
+            match stmt.action {
+                AlterAction::AddColumn(col) => {
+                    let table = state.get_table_mut(&stmt.table).unwrap();
+                    table.add_column(col).map_err(|e| SqlError::Storage(e.to_string()))?;
+                }
+                AlterAction::DropColumn(name) => {
+                    let table = state.get_table_mut(&stmt.table).unwrap();
+                    table.drop_column(&name).map_err(|e| SqlError::Storage(e.to_string()))?;
+                }
+                AlterAction::RenameColumn { old_name, new_name } => {
+                    let table = state.get_table_mut(&stmt.table).unwrap();
+                    table.rename_column(&old_name, &new_name).map_err(|e| SqlError::Storage(e.to_string()))?;
+                }
+                AlterAction::RenameTable(new_name) => {
+                    if state.get_table(&new_name).is_some() {
+                        return Err(SqlError::Storage(format!("Table {} already exists", new_name)));
+                    }
+                    let mut t = state.tables.remove(&stmt.table).unwrap();
+                    t.rename_table(new_name.clone());
+                    state.tables.insert(new_name, t);
+                }
+            }
+            Ok(())
+        })
+        .await?;
 
         Ok(QueryResult {
             columns: vec![],

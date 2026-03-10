@@ -11,6 +11,7 @@ pub enum WalRecord {
     Commit { tx_id: String },
     Rollback { tx_id: String },
     CreateTable { tx_id: Option<String>, name: String, columns: Vec<Column> },
+    AlterTable { tx_id: Option<String>, table: String, action: crate::sql::ast::AlterAction },
     DropTable { tx_id: Option<String>, name: String },
     Insert { tx_id: Option<String>, table: String, values: Vec<Value> },
     Update { tx_id: Option<String>, table: String, id: String, values: Vec<Value> },

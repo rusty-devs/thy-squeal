@@ -59,3 +59,60 @@ async fn test_serial_shorthand() {
     let result = executor.execute("SELECT id FROM tasks", vec![], None).await.unwrap();
     assert_eq!(result.rows[0][0], Value::Int(1));
 }
+
+#[tokio::test]
+async fn test_alter_table() {
+    let db = Database::new();
+    let executor = Arc::new(Executor::new(db));
+
+    executor
+        .execute("CREATE TABLE users (id INT, name TEXT)", vec![], None)
+        .await
+        .unwrap();
+    executor
+        .execute("INSERT INTO users VALUES (1, 'Alice')", vec![], None)
+        .await
+        .unwrap();
+
+    // 1. ADD COLUMN
+    executor
+        .execute("ALTER TABLE users ADD COLUMN age INT", vec![], None)
+        .await
+        .unwrap();
+    
+    let result = executor.execute("SELECT age FROM users", vec![], None).await.unwrap();
+    assert_eq!(result.rows[0][0], Value::Null); // Existing rows get NULL
+
+    executor.execute("UPDATE users SET age = 30 WHERE id = 1", vec![], None).await.unwrap();
+    let result = executor.execute("SELECT age FROM users", vec![], None).await.unwrap();
+    assert_eq!(result.rows[0][0], Value::Int(30));
+
+    // 2. RENAME COLUMN
+    executor
+        .execute("ALTER TABLE users RENAME COLUMN name TO full_name", vec![], None)
+        .await
+        .unwrap();
+    let result = executor.execute("SELECT full_name FROM users", vec![], None).await.unwrap();
+    assert_eq!(result.rows[0][0], Value::Text("Alice".to_string()));
+
+    // 3. DROP COLUMN
+    executor
+        .execute("ALTER TABLE users DROP COLUMN age", vec![], None)
+        .await
+        .unwrap();
+    let result = executor.execute("SELECT * FROM users", vec![], None).await.unwrap();
+    assert_eq!(result.columns.len(), 2); // id, full_name
+    assert_eq!(result.rows[0].len(), 2);
+
+    // 4. RENAME TABLE
+    executor
+        .execute("ALTER TABLE users RENAME TO members", vec![], None)
+        .await
+        .unwrap();
+    let result = executor.execute("SELECT * FROM members", vec![], None).await.unwrap();
+    assert_eq!(result.rows.len(), 1);
+    
+    // Original table should be gone
+    let err = executor.execute("SELECT * FROM users", vec![], None).await.unwrap_err();
+    assert!(matches!(err, crate::sql::error::SqlError::TableNotFound(_)));
+}

@@ -52,6 +52,7 @@ impl Executor {
                 SqlStmt::Commit => self.exec_commit(transaction_id.as_deref()).await?,
                 SqlStmt::Rollback => self.exec_rollback(transaction_id.as_deref()).await?,
                 SqlStmt::CreateTable(ct) => self.exec_create_table(ct, transaction_id.as_deref()).await?,
+                SqlStmt::AlterTable(at) => self.exec_alter_table(at, transaction_id.as_deref()).await?,
                 SqlStmt::DropTable(dt) => self.exec_drop_table(dt, transaction_id.as_deref()).await?,
                 SqlStmt::CreateIndex(ci) => self.exec_create_index(ci, transaction_id.as_deref()).await?,
                 SqlStmt::Select(s) => {

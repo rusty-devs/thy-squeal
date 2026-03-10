@@ -148,7 +148,7 @@ thy-squeal/                          # Cargo workspace
 - [x] Parameterized Queries (Prepared statements)
 - [x] Client CLI (Clap)
 - [x] REPL with history and HTTP execution
-- [ ] **ALTER TABLE**: Support for schema evolution
+- [x] **ALTER TABLE**: Support for schema evolution
 - [ ] **Constraints**: Primary & Foreign Keys
 - [x] **AUTO_INCREMENT**: Automated ID generation
 - [ ] JavaScript REPL (QuickJS)

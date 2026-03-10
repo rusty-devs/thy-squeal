@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum SqlStmt {
     CreateTable(CreateTableStmt),
+    AlterTable(AlterTableStmt),
     DropTable(DropTableStmt),
     CreateIndex(CreateIndexStmt),
     Select(SelectStmt),
@@ -32,7 +33,7 @@ impl SqlStmt {
             SqlStmt::CreateIndex(ci) => ci.resolve_placeholders(&mut counter),
             SqlStmt::Insert(i) => i.resolve_placeholders(&mut counter),
             // No placeholders in these statements
-            SqlStmt::CreateTable(_) | SqlStmt::DropTable(_) | SqlStmt::Search(_) | SqlStmt::Begin | SqlStmt::Commit | SqlStmt::Rollback | SqlStmt::Prepare(_) | SqlStmt::Execute(_) | SqlStmt::Deallocate(_) => {}
+            SqlStmt::CreateTable(_) | SqlStmt::AlterTable(_) | SqlStmt::DropTable(_) | SqlStmt::Search(_) | SqlStmt::Begin | SqlStmt::Commit | SqlStmt::Rollback | SqlStmt::Prepare(_) | SqlStmt::Execute(_) | SqlStmt::Deallocate(_) => {}
         }
     }
 }
@@ -305,6 +306,20 @@ impl DeleteStmt {
 pub struct CreateTableStmt {
     pub name: String,
     pub columns: Vec<Column>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AlterTableStmt {
+    pub table: String,
+    pub action: AlterAction,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum AlterAction {
+    AddColumn(Column),
+    DropColumn(String),
+    RenameColumn { old_name: String, new_name: String },
+    RenameTable(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

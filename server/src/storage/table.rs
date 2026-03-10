@@ -126,6 +126,75 @@ impl Table {
         }
     }
 
+    pub fn add_column(&mut self, column: Column) -> Result<(), StorageError> {
+        if self.column_index(&column.name).is_some() {
+            return Err(StorageError::PersistenceError(format!(
+                "Column {} already exists in table {}",
+                column.name, self.name
+            )));
+        }
+
+        let new_idx = self.columns.len();
+        if column.is_auto_increment {
+            self.auto_inc_counters.insert(new_idx, 1);
+        }
+
+        self.columns.push(column);
+
+        // Update existing rows with NULL
+        for row in &mut self.rows {
+            row.values.push(Value::Null);
+        }
+
+        Ok(())
+    }
+
+    pub fn drop_column(&mut self, name: &str) -> Result<(), StorageError> {
+        let idx = self
+            .column_index(name)
+            .ok_or_else(|| StorageError::ColumnNotFound(format!("{}.{}", self.name, name)))?;
+
+        self.columns.remove(idx);
+
+        // Update existing rows
+        for row in &mut self.rows {
+            row.values.remove(idx);
+        }
+
+        // Rebuild auto_inc_counters indices
+        let mut new_counters = HashMap::new();
+        for (old_idx, val) in &self.auto_inc_counters {
+            if *old_idx < idx {
+                new_counters.insert(*old_idx, *val);
+            } else if *old_idx > idx {
+                new_counters.insert(*old_idx - 1, *val);
+            }
+        }
+        self.auto_inc_counters = new_counters;
+
+        Ok(())
+    }
+
+    pub fn rename_column(&mut self, old_name: &str, new_name: &str) -> Result<(), StorageError> {
+        let idx = self
+            .column_index(old_name)
+            .ok_or_else(|| StorageError::ColumnNotFound(format!("{}.{}", self.name, old_name)))?;
+
+        if self.column_index(new_name).is_some() {
+            return Err(StorageError::PersistenceError(format!(
+                "Column {} already exists in table {}",
+                new_name, self.name
+            )));
+        }
+
+        self.columns[idx].name = new_name.to_string();
+        Ok(())
+    }
+
+    pub fn rename_table(&mut self, new_name: String) {
+        self.name = new_name;
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn create_index(
         &mut self,

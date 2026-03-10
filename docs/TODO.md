@@ -51,7 +51,7 @@
 - [x] Modularize test suite (`tests/` and `executor/tests/` directories)
 
 ## Phase 5: Compatibility & Advanced Features (v0.5)
-- [ ] **ALTER TABLE**: Support for `ADD COLUMN`, `DROP COLUMN`, `RENAME COLUMN`, `RENAME TABLE`
+- [x] **ALTER TABLE**: Support for `ADD COLUMN`, `DROP COLUMN`, `RENAME COLUMN`, `RENAME TABLE`
 - [ ] **Constraints**: Proper `PRIMARY KEY` and `FOREIGN KEY` (Referential Integrity)
 - [x] **AUTO_INCREMENT / SERIAL**: Automated ID generation for integer columns
 - [ ] **Standard SQL Functions**: `CONCAT`, `SUBSTRING`, `COALESCE`, `NOW()`, `DATE_FORMAT`, `CAST(x AS type)`
