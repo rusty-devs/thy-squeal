@@ -14,10 +14,10 @@ impl Table {
         values: Vec<Value>,
         db_state: &DatabaseState,
     ) -> Result<String, StorageError> {
-        if values.len() != self.columns.len() {
+        if values.len() != self.schema.columns.len() {
             return Err(StorageError::InvalidType(format!(
                 "Expected {} columns, got {}",
-                self.columns.len(),
+                self.schema.columns.len(),
                 values.len()
             )));
         }
@@ -30,11 +30,11 @@ impl Table {
         let table_ref: &Table = self;
 
         // 1. Check Foreign Key constraints
-        for fk in &self.foreign_keys {
+        for fk in &self.schema.foreign_keys {
             let mut local_values = Vec::new();
             for col_name in &fk.columns {
                 let idx = self.column_index(col_name).ok_or_else(|| {
-                    StorageError::ColumnNotFound(format!("{}.{}", self.name, col_name))
+                    StorageError::ColumnNotFound(format!("{}.{}", self.schema.name, col_name))
                 })?;
                 local_values.push(values[idx].clone());
             }
@@ -45,7 +45,7 @@ impl Table {
 
             // Search for matching row in ref_table
             let mut found = false;
-            for ref_row in &ref_table.rows {
+            for ref_row in ref_table.rows() {
                 let mut matches = true;
                 for (i, ref_col_name) in fk.ref_columns.iter().enumerate() {
                     let ref_idx = ref_table.column_index(ref_col_name).ok_or_else(|| {
@@ -71,7 +71,7 @@ impl Table {
         }
 
         // 2. Check unique constraints/indexes before inserting
-        for index in self.indexes.values() {
+        for index in self.indexes.secondary.values() {
             // Check partial condition
             if let Some(cond) = index.where_clause() {
                 let context_list = [(table_ref, None, &row)];
@@ -101,7 +101,7 @@ impl Table {
 
         // 2. Update all indexes
         let mut index_keys = Vec::new();
-        for index in self.indexes.values() {
+        for index in self.indexes.secondary.values() {
             // Check partial condition
             if let Some(cond) = index.where_clause() {
                 let context_list = [(table_ref, None, &row)];
@@ -126,7 +126,7 @@ impl Table {
             index_keys.push(Some(key));
         }
 
-        for (index, key_opt) in self.indexes.values_mut().zip(index_keys) {
+        for (index, key_opt) in self.indexes.secondary.values_mut().zip(index_keys) {
             if let Some(key) = key_opt {
                 index.insert(key, id.clone())?;
             }
@@ -140,7 +140,7 @@ impl Table {
             )));
         }
 
-        self.rows.push(row);
+        self.data.rows.push(row);
         Ok(id)
     }
 
@@ -151,16 +151,16 @@ impl Table {
         values: Vec<Value>,
         db_state: &DatabaseState,
     ) -> Result<(), StorageError> {
-        if values.len() != self.columns.len() {
+        if values.len() != self.schema.columns.len() {
             return Err(StorageError::InvalidType(format!(
                 "Expected {} columns, got {}",
-                self.columns.len(),
+                self.schema.columns.len(),
                 values.len()
             )));
         }
 
-        if let Some(pos) = self.rows.iter().position(|r| r.id == id) {
-            let old_values = self.rows[pos].values.clone();
+        if let Some(pos) = self.data.rows.iter().position(|r| r.id == id) {
+            let old_values = self.data.rows[pos].values.clone();
             let old_row = Row {
                 id: id.to_string(),
                 values: old_values.clone(),
@@ -172,7 +172,7 @@ impl Table {
             let table_ref: &Table = self;
 
             // 1. Check unique constraints
-            for index in self.indexes.values() {
+            for index in self.indexes.secondary.values() {
                 // Check if new row matches partial condition
                 if let Some(cond) = index.where_clause() {
                     let context_list = [(table_ref, None, &new_row)];
@@ -209,7 +209,7 @@ impl Table {
 
             // 2. Update all indexes
             let mut index_updates = Vec::new();
-            for index in self.indexes.values() {
+            for index in self.indexes.secondary.values() {
                 let cond = index.where_clause();
                 let old_match = if let Some(ref c) = cond {
                     let context_list = [(table_ref, None, &old_row)];
@@ -252,7 +252,7 @@ impl Table {
             }
 
             for (index, (old_match, new_match, old_key, new_key)) in
-                self.indexes.values_mut().zip(index_updates)
+                self.indexes.secondary.values_mut().zip(index_updates)
             {
                 if old_match && !new_match {
                     index.remove(&old_key, id);
@@ -264,10 +264,10 @@ impl Table {
                 }
             }
 
-            self.rows[pos].values = values;
+            self.data.rows[pos].values = values;
 
             // 3. Update Search Index
-            let updated_row = self.rows[pos].clone();
+            let updated_row = self.data.rows[pos].clone();
             if let Err(e) = self.index_row(&updated_row) {
                 return Err(StorageError::PersistenceError(format!(
                     "Search index error: {}",
@@ -287,8 +287,8 @@ impl Table {
         id: &str,
         db_state: &DatabaseState,
     ) -> Result<(), StorageError> {
-        if let Some(pos) = self.rows.iter().position(|r| r.id == id) {
-            let values = self.rows[pos].values.clone();
+        if let Some(pos) = self.data.rows.iter().position(|r| r.id == id) {
+            let values = self.data.rows[pos].values.clone();
             let row = Row {
                 id: id.to_string(),
                 values: values.clone(),
@@ -297,7 +297,7 @@ impl Table {
 
             // 1. Update all indexes
             let mut index_to_remove = Vec::new();
-            for index in self.indexes.values() {
+            for index in self.indexes.secondary.values() {
                 // Check partial condition
                 if let Some(cond) = index.where_clause() {
                     let context_list = [(table_ref, None, &row)];
@@ -322,14 +322,14 @@ impl Table {
                 index_to_remove.push(Some(key));
             }
 
-            for (index, key_opt) in self.indexes.values_mut().zip(index_to_remove) {
+            for (index, key_opt) in self.indexes.secondary.values_mut().zip(index_to_remove) {
                 if let Some(key) = key_opt {
                     index.remove(&key, id);
                 }
             }
 
             // 2. Remove from Search Index
-            if let Some(ref search_index) = self.search_index
+            if let Some(ref search_index) = self.indexes.search
                 && let Err(e) = search_index.lock().unwrap().delete_document(id)
             {
                 return Err(StorageError::PersistenceError(format!(
@@ -338,7 +338,7 @@ impl Table {
                 )));
             }
 
-            self.rows.remove(pos);
+            self.data.rows.remove(pos);
             Ok(())
         } else {
             Err(StorageError::RowNotFound(id.to_string()))

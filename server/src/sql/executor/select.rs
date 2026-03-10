@@ -41,7 +41,7 @@ impl Executor {
                         });
                     }
                     let mut table = Table::new(cte.name.clone(), cols, None, vec![]);
-                    table.rows = res
+                    table.data.rows = res
                         .rows
                         .into_iter()
                         .enumerate()
@@ -66,14 +66,14 @@ impl Executor {
                 }];
                 (&dual_table_storage, rows)
             } else if let Some(t) = cte_tables.get(&stmt.table) {
-                (t, t.rows.clone())
+                (t, t.data.rows.clone())
             } else if stmt.table.starts_with("information_schema.") {
                 let table_name = stmt.table.strip_prefix("information_schema.").unwrap();
                 info_schema_storage = get_info_schema_tables(db_state);
                 let t = info_schema_storage
                     .get(table_name)
                     .ok_or_else(|| SqlError::TableNotFound(stmt.table.clone()))?;
-                (t, t.rows.clone())
+                (t, t.data.rows.clone())
             } else {
                 let t = db_state
                     .get_table(&stmt.table)
@@ -81,7 +81,7 @@ impl Executor {
 
                 let rows = if stmt.joins.is_empty() {
                     let mut best_index = None;
-                    let mut best_estimated_rows = t.rows.len();
+                    let mut best_estimated_rows = t.data.rows.len();
 
                     if let Some(ast::Condition::Comparison(
                         left_expr,
@@ -89,7 +89,7 @@ impl Executor {
                         ast::Expression::Literal(val),
                     )) = &stmt.where_clause
                     {
-                        for (idx_name, index) in &t.indexes {
+                        for (idx_name, index) in &t.indexes.secondary {
                             let exprs = index.expressions();
                             if exprs.len() == 1 && &exprs[0] == left_expr {
                                 let key = vec![val.clone()];
@@ -107,13 +107,14 @@ impl Executor {
                         }
                     }
 
-                    let selectivity_threshold = (t.rows.len() as f64 * 0.3) as usize;
+                    let selectivity_threshold = (t.data.rows.len() as f64 * 0.3) as usize;
 
                     if let Some((_name, index, key)) = best_index
-                        && (best_estimated_rows < selectivity_threshold || t.rows.len() < 10)
+                        && (best_estimated_rows < selectivity_threshold || t.data.rows.len() < 10)
                     {
                         if let Some(row_ids) = index.get(&key) {
-                            t.rows
+                            t.data
+                                .rows
                                 .iter()
                                 .filter(|r| row_ids.contains(&r.id))
                                 .cloned()
@@ -122,10 +123,10 @@ impl Executor {
                             vec![]
                         }
                     } else {
-                        t.rows.clone()
+                        t.data.rows.clone()
                     }
                 } else {
-                    t.rows.clone()
+                    t.data.rows.clone()
                 };
                 (t, rows)
             };
@@ -156,7 +157,7 @@ impl Executor {
 
                 for existing_ctx in joined_rows {
                     let mut found_match = false;
-                    for new_row in &join_table.rows {
+                    for new_row in &join_table.data.rows {
                         let eval_ctx_list: Vec<(&Table, Option<&str>, &Row)> = existing_ctx
                             .iter()
                             .map(|(t, a, r)| (*t, a.as_deref(), r))
@@ -335,7 +336,7 @@ impl Executor {
 
             match &col.expr {
                 ast::Expression::Star => {
-                    names.extend(base_table.columns.iter().map(|c| c.name.clone()));
+                    names.extend(base_table.schema.columns.iter().map(|c| c.name.clone()));
                     for join in joins {
                         let join_table = if let Some(t) = cte_tables.get(&join.table) {
                             Some(t)
@@ -344,7 +345,7 @@ impl Executor {
                         };
 
                         if let Some(t) = join_table {
-                            names.extend(t.columns.iter().map(|c| c.name.clone()));
+                            names.extend(t.schema.columns.iter().map(|c| c.name.clone()));
                         }
                     }
                 }

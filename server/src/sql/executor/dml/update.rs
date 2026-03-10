@@ -32,7 +32,7 @@ impl Executor {
 
         let mut row_updates = Vec::new();
 
-        for row in &table.rows {
+        for row in table.rows() {
             let context_list = [(table, None, row)];
             let eval_ctx = EvalContext::new(&context_list, params, &[], &state);
 
@@ -51,7 +51,7 @@ impl Executor {
                     let mut val = evaluate_expression_joined(self, expr, &eval_ctx)?;
 
                     // Perform type casting for UPDATE
-                    let target_type = &table.columns[col_idx].data_type;
+                    let target_type = &table.columns()[col_idx].data_type;
                     val = val.cast(target_type).map_err(|e| {
                         SqlError::TypeMismatch(format!(
                             "Error casting value for column '{}': {}",

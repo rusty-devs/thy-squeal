@@ -23,7 +23,7 @@ async fn test_sql_lifecycle() {
         data_dir.clone(),
     )
     .unwrap();
-    let executor = Arc::new(Executor::new(db));
+    let executor = Arc::new(Executor::new(db).with_data_dir(data_dir.clone()));
 
     let config = crate::config::Config {
         server: crate::config::ServerConfig {

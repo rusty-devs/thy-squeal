@@ -4,9 +4,7 @@ use super::super::row::Row;
 use super::super::value::Value;
 use super::Table;
 use crate::sql::ast::{Condition, Expression};
-use crate::sql::eval::{
-    EvalContext, Evaluator, evaluate_condition_joined, evaluate_expression_joined,
-};
+use crate::sql::eval::{EvalContext, Evaluator, evaluate_condition_joined};
 use crate::storage::DatabaseState;
 use std::collections::HashMap;
 
@@ -50,7 +48,7 @@ impl Table {
         let exprs = index.expressions();
         let cond = index.where_clause();
         let table_ref: &Table = self;
-        for row in &self.rows {
+        for row in &self.data.rows {
             // Check partial index condition
             if let Some(ref c) = cond {
                 let context_list = [(table_ref, None, row)];
@@ -69,7 +67,7 @@ impl Table {
             index.insert(key, row.id.clone())?;
         }
 
-        self.indexes.insert(name, index);
+        self.indexes.secondary.insert(name, index);
         Ok(())
     }
 
@@ -99,12 +97,13 @@ impl Table {
         let eval_ctx = EvalContext::new(&context_list, &[], &[], db_state);
 
         for expr in expressions {
-            let val = evaluate_expression_joined(evaluator, expr, &eval_ctx).map_err(|e| {
-                StorageError::PersistenceError(format!(
-                    "Index expression evaluation error: {:?}",
-                    e
-                ))
-            })?;
+            let val = crate::sql::eval::evaluate_expression_joined(evaluator, expr, &eval_ctx)
+                .map_err(|e| {
+                    StorageError::PersistenceError(format!(
+                        "Index expression evaluation error: {:?}",
+                        e
+                    ))
+                })?;
             key.push(val);
         }
         Ok(key)

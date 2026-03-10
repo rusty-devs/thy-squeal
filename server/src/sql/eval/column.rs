@@ -9,7 +9,7 @@ pub fn resolve_column(name: &str, contexts: &[(&Table, Option<&str>, &Row)]) -> 
             // Rule: If alias exists, original name is hidden.
             let matches_table = match alias {
                 Some(a) => *a == parts[0],
-                None => table.name == parts[0],
+                None => table.name() == parts[0],
             };
 
             if matches_table && let Some(idx) = table.column_index(parts[1]) {

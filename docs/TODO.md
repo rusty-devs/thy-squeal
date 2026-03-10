@@ -70,8 +70,8 @@
 - [ ] JavaScript Query Interface (QuickJS)
 
 ## High-Impact Refactorings
-- [ ] **Command Pattern Dispatcher**: Split `exec_stmt` into specialized `StatementExecutor` structs.
-- [ ] **Session Management**: Introduce a `Session` struct to encapsulate user, transaction, and settings state.
-- [ ] **Evaluator Decomposition**: Split monolithic evaluators into specialized, chainable components.
+- [x] **Command Pattern Dispatcher**: Split `exec_stmt` into specialized `StatementExecutor` structs.
+- [x] **Session Management**: Introduce a `Session` struct to encapsulate user, transaction, and settings state.
+- [x] **Evaluator Decomposition**: Split monolithic evaluators into specialized, chainable components.
 - [ ] **Storage Decoupling**: Separate `Table` into `TableSchema`, `TableData`, and `TableIndexes`.
 - [ ] **Error Handling Unification**: Streamline `SqlError` and `StorageError` hierarchy.

@@ -12,28 +12,18 @@ async fn test_persistence() {
 
     {
         let persister = Box::new(SledPersister::new(&data_dir).unwrap());
-        let mut db = Database::with_persister(persister, data_dir.clone()).unwrap();
+        let db = Database::with_persister(persister, data_dir.clone()).unwrap();
 
-        db.create_table(
-            "test_table".to_string(),
-            vec![
-                crate::storage::Column {
-                    name: "id".to_string(),
-                    data_type: crate::storage::DataType::Int,
-                    is_auto_increment: false,
-                },
-                crate::storage::Column {
-                    name: "name".to_string(),
-                    data_type: crate::storage::DataType::Text,
-                    is_auto_increment: false,
-                },
-            ],
-            None,
-            vec![],
-        )
-        .unwrap();
-
-        let executor = Arc::new(Executor::new(db));
+        let executor = Arc::new(Executor::new(db).with_data_dir(data_dir.clone()));
+        executor
+            .execute(
+                "CREATE TABLE test_table (id INT, name TEXT)",
+                vec![],
+                None,
+                None,
+            )
+            .await
+            .unwrap();
         executor
             .execute(
                 "INSERT INTO test_table VALUES (1, 'alice')",
@@ -49,7 +39,7 @@ async fn test_persistence() {
     {
         let persister = Box::new(SledPersister::new(&data_dir).unwrap());
         let db = Database::with_persister(persister, data_dir.clone()).unwrap();
-        let executor = Arc::new(Executor::new(db));
+        let executor = Arc::new(Executor::new(db).with_data_dir(data_dir.clone()));
 
         let res = executor
             .execute(
@@ -77,7 +67,7 @@ async fn test_wal_recovery() {
     {
         let persister = Box::new(SledPersister::new(&data_dir).unwrap());
         let db = Database::with_persister(persister, data_dir.clone()).unwrap();
-        let executor = Arc::new(Executor::new(db));
+        let executor = Arc::new(Executor::new(db).with_data_dir(data_dir.clone()));
 
         executor
             .execute("CREATE TABLE w (id INT, v TEXT)", vec![], None, None)
@@ -87,18 +77,13 @@ async fn test_wal_recovery() {
             .execute("INSERT INTO w VALUES (1, 'wal_data')", vec![], None, None)
             .await
             .unwrap();
-
-        // We don't call save() manually here to ensure it's in WAL only if not auto-saved
-        // But our implementation saves on every mutation for now.
-        // To truly test WAL, we'd need to simulate a crash before save().
-        // However, with Sled, WAL is written immediately.
     }
 
     // 2. Re-open and verify
     {
         let persister = Box::new(SledPersister::new(&data_dir).unwrap());
         let db = Database::with_persister(persister, data_dir.clone()).unwrap();
-        let executor = Arc::new(Executor::new(db));
+        let executor = Arc::new(Executor::new(db).with_data_dir(data_dir.clone()));
 
         let res = executor
             .execute("SELECT v FROM w WHERE id = 1", vec![], None, None)

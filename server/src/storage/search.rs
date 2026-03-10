@@ -1,6 +1,8 @@
+use crate::storage::Column;
 use anyhow::Result;
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
+use tantivy::schema::Value as TantivyValue;
 use tantivy::schema::*;
 use tantivy::{Index, IndexWriter, ReloadPolicy};
 
@@ -37,14 +39,19 @@ impl SearchIndex {
         })
     }
 
-    pub fn add_document(&mut self, row_id: &str, field_values: &[(String, String)]) -> Result<()> {
+    pub fn index_document(
+        &mut self,
+        row_id: &str,
+        columns: &[Column],
+        values: &[crate::storage::Value],
+    ) -> Result<()> {
         let mut doc = tantivy::TantivyDocument::default();
         let row_id_field = self.schema.get_field("row_id")?;
         doc.add_text(row_id_field, row_id);
 
-        for (field_name, value) in field_values {
-            if let Ok(field) = self.schema.get_field(field_name) {
-                doc.add_text(field, value);
+        for (i, col) in columns.iter().enumerate() {
+            if let Ok(field) = self.schema.get_field(&col.name) {
+                doc.add_text(field, values[i].to_string());
             }
         }
 
@@ -89,9 +96,8 @@ impl SearchIndex {
 
         for (score, doc_address) in top_docs {
             let retrieved_doc: tantivy::TantivyDocument = searcher.doc(doc_address)?;
-            if let Some(id_str) = retrieved_doc
-                .get_first(row_id_field)
-                .and_then(|val| val.as_str())
+            if let Some(val) = retrieved_doc.get_first(row_id_field)
+                && let Some(id_str) = val.as_str()
             {
                 results.push((id_str.to_string(), score));
             }

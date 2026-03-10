@@ -1,20 +1,20 @@
 use super::super::ast;
 use super::super::error::{SqlError, SqlResult};
 use super::{Executor, QueryResult};
-use crate::storage::{DatabaseState, Value};
+use crate::storage::Value;
 
 impl Executor {
     pub(crate) async fn exec_search(
         &self,
         stmt: ast::SearchStmt,
-        db_state: &DatabaseState,
+        db_state: &crate::storage::DatabaseState,
         tx_id: Option<&str>,
     ) -> SqlResult<QueryResult> {
         let table = db_state
             .get_table(&stmt.table)
             .ok_or_else(|| SqlError::TableNotFound(stmt.table.clone()))?;
 
-        let search_index = table.search_index.as_ref().ok_or_else(|| {
+        let search_index = table.indexes.search.as_ref().ok_or_else(|| {
             SqlError::Runtime(format!(
                 "Full-text search index not enabled for table: {}",
                 stmt.table
@@ -29,14 +29,19 @@ impl Executor {
 
         let mut rows = Vec::new();
         for (row_id, score) in results {
-            if let Some(row) = table.rows.iter().find(|r| r.id == row_id) {
+            if let Some(row) = table.data.rows.iter().find(|r| r.id == row_id) {
                 let mut values = row.values.clone();
                 values.push(Value::Float(score as f64));
                 rows.push(values);
             }
         }
 
-        let mut columns: Vec<String> = table.columns.iter().map(|c| c.name.clone()).collect();
+        let mut columns: Vec<String> = table
+            .schema
+            .columns
+            .iter()
+            .map(|c| c.name.clone())
+            .collect();
         columns.push("_score".to_string());
 
         Ok(QueryResult {

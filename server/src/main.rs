@@ -41,7 +41,7 @@ async fn main() -> anyhow::Result<()> {
         storage::Database::new()
     };
 
-    let executor = Arc::new(sql::Executor::new(db));
+    let executor = Arc::new(sql::Executor::new(db).with_data_dir(config.storage.data_dir.clone()));
 
     // 1. MySQL Protocol Task
     let mysql_executor = executor.clone();

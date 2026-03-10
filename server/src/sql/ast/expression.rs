@@ -44,6 +44,7 @@ impl Expression {
         }
     }
 
+    #[allow(dead_code)]
     pub fn to_sql(&self) -> String {
         match self {
             Expression::Literal(v) => v.to_sql(),
@@ -54,14 +55,14 @@ impl Expression {
             }
             Expression::FunctionCall(fc) => {
                 let args: Vec<String> = fc.args.iter().map(|a| a.to_sql()).collect();
-                format!("{:?}({})", fc.name, args.join(", ")).to_uppercase()
+                format!("{}({})", fc.name.to_sql(), args.join(", "))
             }
             Expression::ScalarFunc(sf) => {
                 let args: Vec<String> = sf.args.iter().map(|a| a.to_sql()).collect();
-                format!("{:?}({})", sf.name, args.join(", ")).to_uppercase()
+                format!("{}({})", sf.name.to_sql(), args.join(", "))
             }
             Expression::Star => "*".to_string(),
-            Expression::Subquery(_) => "(SELECT ...)".to_string(),
+            Expression::Subquery(_) => "(SELECT ...)".to_string(), // Simplified for now
         }
     }
 }
@@ -90,6 +91,21 @@ pub enum ScalarFuncType {
     Replace,
 }
 
+impl ScalarFuncType {
+    pub fn to_sql(&self) -> &str {
+        match self {
+            ScalarFuncType::Lower => "LOWER",
+            ScalarFuncType::Upper => "UPPER",
+            ScalarFuncType::Length => "LENGTH",
+            ScalarFuncType::Abs => "ABS",
+            ScalarFuncType::Now => "NOW",
+            ScalarFuncType::Concat => "CONCAT",
+            ScalarFuncType::Coalesce => "COALESCE",
+            ScalarFuncType::Replace => "REPLACE",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum AggregateType {
     Count,
@@ -97,6 +113,18 @@ pub enum AggregateType {
     Avg,
     Min,
     Max,
+}
+
+impl AggregateType {
+    pub fn to_sql(&self) -> &str {
+        match self {
+            AggregateType::Count => "COUNT",
+            AggregateType::Sum => "SUM",
+            AggregateType::Avg => "AVG",
+            AggregateType::Min => "MIN",
+            AggregateType::Max => "MAX",
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -108,6 +136,7 @@ pub enum BinaryOp {
 }
 
 impl BinaryOp {
+    #[allow(dead_code)]
     pub fn to_sql(&self) -> &str {
         match self {
             BinaryOp::Add => "+",

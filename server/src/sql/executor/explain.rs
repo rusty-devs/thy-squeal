@@ -27,9 +27,9 @@ impl Executor {
             )) = &stmt.where_clause
         {
             let mut best_index_found = None;
-            let mut best_estimated_rows = table.rows.len();
+            let mut best_estimated_rows = table.data.rows.len();
 
-            for (name, index) in &table.indexes {
+            for (name, index) in &table.indexes.secondary {
                 let exprs = index.expressions();
                 if exprs.len() == 1 && &exprs[0] == left_expr {
                     let key = vec![val.clone()];
@@ -46,9 +46,9 @@ impl Executor {
                 }
             }
 
-            let selectivity_threshold = (table.rows.len() as f64 * 0.3) as usize;
+            let selectivity_threshold = (table.data.rows.len() as f64 * 0.3) as usize;
             if let Some((name, index)) = best_index_found
-                && (best_estimated_rows < selectivity_threshold || table.rows.len() < 10)
+                && (best_estimated_rows < selectivity_threshold || table.data.rows.len() < 10)
             {
                 scan_type = match index {
                     TableIndex::BTree { .. } => "Index Lookup (BTree)".to_string(),

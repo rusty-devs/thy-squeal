@@ -29,6 +29,7 @@ impl Value {
         }
     }
 
+    #[allow(dead_code)]
     pub fn to_sql(&self) -> String {
         match self {
             Value::Null => "NULL".to_string(),

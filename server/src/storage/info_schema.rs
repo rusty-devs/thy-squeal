@@ -23,7 +23,7 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
         },
     ];
     let mut schemata_table = Table::new("schemata".to_string(), schemata_cols, None, vec![]);
-    schemata_table.rows.push(Row {
+    schemata_table.data.rows.push(Row {
         id: "def".to_string(),
         values: vec![
             Value::Text("def".to_string()),
@@ -58,13 +58,13 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
     ];
     let mut tables_table = Table::new("tables".to_string(), tables_cols, None, vec![]);
     for (name, table) in &db_state.tables {
-        tables_table.rows.push(Row {
+        tables_table.data.rows.push(Row {
             id: name.clone(),
             values: vec![
                 Value::Text("default".to_string()),
                 Value::Text(name.clone()),
                 Value::Text("BASE TABLE".to_string()),
-                Value::Int(table.rows.len() as i64),
+                Value::Int(table.data.rows.len() as i64),
             ],
         });
     }
@@ -77,7 +77,7 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
         "statistics",
         "key_column_usage",
     ] {
-        tables_table.rows.push(Row {
+        tables_table.data.rows.push(Row {
             id: sys_view.to_string(),
             values: vec![
                 Value::Text("information_schema".to_string()),
@@ -124,8 +124,8 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
     ];
     let mut columns_table = Table::new("columns".to_string(), columns_cols, None, vec![]);
     for (t_name, table) in &db_state.tables {
-        for (i, col) in table.columns.iter().enumerate() {
-            columns_table.rows.push(Row {
+        for (i, col) in table.schema.columns.iter().enumerate() {
+            columns_table.data.rows.push(Row {
                 id: format!("{}_{}", t_name, col.name),
                 values: vec![
                     Value::Text("default".to_string()),
@@ -190,7 +190,7 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
     ];
     let mut stats_table = Table::new("statistics".to_string(), stats_cols, None, vec![]);
     for (t_name, table) in &db_state.tables {
-        for (idx_name, index) in &table.indexes {
+        for (idx_name, index) in &table.indexes.secondary {
             let non_unique = if index.is_unique() { 0 } else { 1 };
             let idx_type = match index {
                 crate::storage::TableIndex::BTree { .. } => "BTREE",
@@ -207,7 +207,7 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
                     _ => format!("expr_{}", i),
                 };
 
-                stats_table.rows.push(Row {
+                stats_table.data.rows.push(Row {
                     id: format!("{}_{}_{}", t_name, idx_name, i),
                     values: vec![
                         Value::Text("default".to_string()),
@@ -272,9 +272,9 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
     let mut kcu_table = Table::new("key_column_usage".to_string(), kcu_cols, None, vec![]);
     for (t_name, table) in &db_state.tables {
         // Primary Key
-        if let Some(ref pk_cols) = table.primary_key {
+        if let Some(ref pk_cols) = table.schema.primary_key {
             for col_name in pk_cols {
-                kcu_table.rows.push(Row {
+                kcu_table.data.rows.push(Row {
                     id: format!("{}_pk_{}", t_name, col_name),
                     values: vec![
                         Value::Text("default".to_string()),
@@ -291,10 +291,10 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
         }
 
         // Foreign Keys
-        for fk in &table.foreign_keys {
+        for fk in &table.schema.foreign_keys {
             let constraint_name = format!("fk_{}_{}", t_name, fk.ref_table);
             for (i, col_name) in fk.columns.iter().enumerate() {
-                kcu_table.rows.push(Row {
+                kcu_table.data.rows.push(Row {
                     id: format!("{}_{}_{}", t_name, constraint_name, i),
                     values: vec![
                         Value::Text("default".to_string()),
@@ -337,12 +337,12 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
     ];
     let mut indexes_table = Table::new("indexes".to_string(), indexes_cols, None, vec![]);
     for (t_name, table) in &db_state.tables {
-        for (idx_name, index) in &table.indexes {
+        for (idx_name, index) in &table.indexes.secondary {
             let (is_unique, idx_type) = match index {
                 crate::storage::TableIndex::BTree { unique, .. } => (*unique, "BTREE"),
                 crate::storage::TableIndex::Hash { unique, .. } => (*unique, "HASH"),
             };
-            indexes_table.rows.push(Row {
+            indexes_table.data.rows.push(Row {
                 id: format!("{}_{}", t_name, idx_name),
                 values: vec![
                     Value::Text(t_name.clone()),

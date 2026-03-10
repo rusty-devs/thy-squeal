@@ -28,6 +28,7 @@ impl DataType {
         }
     }
 
+    #[allow(dead_code)]
     pub fn to_sql(&self) -> String {
         match self {
             DataType::Int => "INT".to_string(),

@@ -30,7 +30,7 @@ impl Executor {
         let column_count = if let Some(ref cols) = stmt.columns {
             cols.len()
         } else {
-            table.columns.len()
+            table.columns().len()
         };
 
         if stmt.values.len() != column_count {
@@ -46,14 +46,14 @@ impl Executor {
         // Map expressions to table columns
         let mut mapped_values = if let Some(ref col_names) = stmt.columns {
             // Initialize with NULLs
-            let mut vals = vec![Value::Null; table.columns.len()];
+            let mut vals = vec![Value::Null; table.columns().len()];
             for (i, name) in col_names.iter().enumerate() {
                 let col_idx = table
                     .column_index(name)
                     .ok_or_else(|| SqlError::ColumnNotFound(format!("{}.{}", table_name, name)))?;
 
                 let mut val = evaluate_expression_joined(self, &stmt.values[i], &eval_ctx)?;
-                let target_type = &table.columns[col_idx].data_type;
+                let target_type = &table.columns()[col_idx].data_type;
                 val = val.cast(target_type).map_err(|e| {
                     SqlError::TypeMismatch(format!(
                         "Error casting value for column '{}': {}",
@@ -68,11 +68,12 @@ impl Executor {
             let mut vals = Vec::new();
             for (i, expr) in stmt.values.iter().enumerate() {
                 let mut val = evaluate_expression_joined(self, expr, &eval_ctx)?;
-                let target_type = &table.columns[i].data_type;
+                let target_type = &table.columns()[i].data_type;
                 val = val.cast(target_type).map_err(|e| {
                     SqlError::TypeMismatch(format!(
                         "Error casting value for column '{}': {}",
-                        table.columns[i].name, e
+                        table.columns()[i].name,
+                        e
                     ))
                 })?;
                 vals.push(val);
@@ -89,7 +90,7 @@ impl Executor {
                 .ok_or_else(|| SqlError::TableNotFound(table_name.clone()))?;
 
             let mut to_generate = Vec::new();
-            for (i, col) in table.columns.iter().enumerate() {
+            for (i, col) in table.columns().iter().enumerate() {
                 if col.is_auto_increment && matches!(&mapped_values[i], Value::Null) {
                     to_generate.push(i);
                 }

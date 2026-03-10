@@ -30,7 +30,7 @@ impl Executor {
 
         let mut row_ids_to_delete = Vec::new();
 
-        for row in &table.rows {
+        for row in table.rows() {
             let context_list = [(table, None, row)];
             let eval_ctx = EvalContext::new(&context_list, params, &[], &state);
 

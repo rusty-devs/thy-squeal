@@ -95,6 +95,7 @@ pub struct Executor {
     pub(crate) db: tokio::sync::RwLock<Database>,
     pub(crate) transactions: DashMap<String, DatabaseState>,
     pub(crate) prepared_statements: DashMap<String, SqlStmt>, // name -> stmt
+    pub(crate) data_dir: Option<String>,
 }
 
 impl Executor {
@@ -103,7 +104,13 @@ impl Executor {
             db: tokio::sync::RwLock::new(db),
             transactions: DashMap::new(),
             prepared_statements: DashMap::new(),
+            data_dir: None,
         }
+    }
+
+    pub fn with_data_dir(mut self, data_dir: String) -> Self {
+        self.data_dir = Some(data_dir);
+        self
     }
 
     pub async fn execute(
@@ -162,7 +169,7 @@ impl Executor {
             let res = futures::executor::block_on(self.exec_select_recursive(plan))?;
 
             if let Some(table) = state.tables.get_mut(&name) {
-                table.rows = res
+                table.data.rows = res
                     .rows
                     .into_iter()
                     .enumerate()

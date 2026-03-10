@@ -90,11 +90,9 @@ impl Database {
         db.ensure_root_user();
 
         // Initialize search indices for each table (after WAL replay)
-        for (name, table) in &mut db.state.tables {
-            let search_path = format!("{}/search_{}", data_dir, name);
-            table
-                .setup_search_index(&search_path)
-                .map_err(|e| StorageError::PersistenceError(e.to_string()))?;
+        for table in db.state.tables.values_mut() {
+            let search_path = format!("{}/search_{}", data_dir, table.schema.name);
+            table.enable_search_index(&search_path);
         }
 
         Ok(db)
@@ -138,6 +136,7 @@ impl Database {
         }
     }
 
+    #[allow(dead_code)]
     pub fn create_materialized_view(
         &mut self,
         executor: &dyn Evaluator,
@@ -168,7 +167,7 @@ impl Database {
         }
 
         let mut table = Table::new(name.clone(), cols, None, vec![]);
-        table.rows = res
+        table.data.rows = res
             .rows
             .into_iter()
             .enumerate()
@@ -184,6 +183,7 @@ impl Database {
         self.save()
     }
 
+    #[allow(dead_code)]
     pub fn create_table(
         &mut self,
         name: String,
@@ -199,13 +199,11 @@ impl Database {
 
         if let Some(ref ref_data_dir) = self._data_dir {
             let search_path = format!("{}/search_{}", ref_data_dir, name);
-            table
-                .setup_search_index(&search_path)
-                .map_err(|e| StorageError::PersistenceError(e.to_string()))?;
+            table.enable_search_index(&search_path);
         }
 
         // Auto-create PRIMARY index if PK is specified
-        if let Some(ref pk_cols) = table.primary_key {
+        if let Some(ref pk_cols) = table.schema.primary_key.clone() {
             let expressions: Vec<crate::sql::ast::Expression> = pk_cols
                 .iter()
                 .map(|c| crate::sql::ast::Expression::Column(c.clone()))
