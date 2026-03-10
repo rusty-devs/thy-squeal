@@ -57,53 +57,43 @@ thy-squeal/                          # Cargo workspace
 ├── server/                          # Server crate
 │   ├── Cargo.toml
 │   └── src/
-│       ├── main.rs                  # Server entry (Axum HTTP, /, /health, /_query)
+│       ├── main.rs                  # Server entry (Axum + MySQL TCP)
 │       ├── config.rs                # YAML config loading
+│       ├── http.rs                  # Axum HTTP handlers
+│       ├── mysql/                   # MySQL Protocol handler
 │       ├── storage/                 # Modular storage engine
-│       │   ├── mod.rs               # Database struct
-│       │   ├── table.rs             # Table, Column, Row
-│       │   ├── value.rs             # Value enum & impls
-│       │   ├── types.rs             # DataType enum
+│       │   ├── database.rs          # Database state management
+│       │   ├── table/               # Table, Index, and Mutation logic
+│       │   ├── value/               # Modular data types (Cast, Ops)
 │       │   ├── info_schema.rs       # Metadata virtual tables
 │       │   └── error.rs             # StorageError
 │       ├── sql/                     # SQL engine
-│       │   ├── mod.rs               # SQL module entry
-│       │   ├── ast.rs               # Abstract Syntax Tree
-│       │   ├── eval.rs              # Expression/Condition evaluator
-│       │   ├── error.rs             # SqlError enum
-│       │   ├── parser/              # Pest-based parser (modular)
-│       │   └── executor/            # SQL statement execution
+│       │   ├── ast/                 # Decomposed AST definitions
+│       │   ├── eval/                # Modular expression evaluation
+│       │   ├── parser/              # Modular Pest-based parsing
+│       │   ├── executor/            # Specialized statement executors
+│       │   └── error.rs             # SqlError enum
 │       └── sql.pest                 # SQL grammar (Pest)
 ├── client/                          # Client crate
 ├── docs/
 └── LICENSE, README.md
 ```
 
-### Current Status (as of v0.4)
+### Current Status (as of v0.5)
 - [x] Workspace setup
-- [x] Server binary with Axum HTTP on port 9200
+- [x] Server binary with Axum HTTP and MySQL TCP (3306)
 - [x] Client binary with REPL
-- [x] YAML config loading
-- [x] GET /, GET /health, POST /_query endpoints
 - [x] SQL grammar (`sql.pest`) — Modular Pest parser
-- [x] In-memory storage: CREATE TABLE, DROP TABLE, INSERT, SELECT, UPDATE, DELETE
-- [x] WHERE clause, ORDER BY, LIMIT support
-- [x] Aggregations (COUNT, SUM, AVG, MIN, MAX)
-- [x] GROUP BY and HAVING support
-- [x] Column aliases
-- [x] DISTINCT support
-- [x] INNER and LEFT JOIN support
-- [x] Subquery support (correlated and IN)
-- [x] EXPLAIN support (execution plan visualization)
-- [x] Full-Text Search integration (Tantivy)
-- [x] Advanced Indexing (B-Tree, Hash, Composite, JSON Path, Functional, Partial)
-- [x] ACID Transactions (BEGIN, COMMIT, ROLLBACK)
-- [x] Write-Ahead Logging (WAL) for durability
-- [x] Information Schema (metadata discoverability)
-- [x] Structured Error Handling (SqlError)
-- [x] Integration testing suite (28+ tests)
-- [x] REPL SQL execution (wired via HTTP)
-- [x] Persistence via `sled` snapshots
+- [x] Modular Architecture: Decomposed AST, Parser, Evaluator, and Storage
+- [x] In-memory storage: CREATE, ALTER, DROP, INSERT, SELECT, UPDATE, DELETE
+- [x] Materialized Views with automatic refresh
+- [x] ACID Transactions & WAL Durability
+- [x] Advanced Indexing (B-Tree, Hash, JSON, Functional, Partial)
+- [x] User Authentication & RBAC (Secure access control)
+- [x] Standard SQL Functions (CONCAT, COALESCE, etc.)
+- [x] CTE Support (WITH clause)
+- [x] SELECT without FROM (Dual-less support)
+- [x] Integration testing suite (43+ tests)
 
 ---
 
@@ -153,12 +143,11 @@ thy-squeal/                          # Cargo workspace
 - [x] **CTEs**: Common Table Expressions (WITH clause)
 - [x] **Materialized Views**: Automatically refreshing pre-calculated query results
 - [x] **User Authentication & RBAC**: Secure access control
-- [ ] JavaScript REPL (QuickJS)
 
+### Phase 6: Production & Distributed (v1.0) - 🏗 IN PROGRESS
+- [ ] **JavaScript Query Interface**: QuickJS integration
+- [ ] **Distributed Mode**: multi-node replication (Raft)
+- [ ] **Telemetry**: Prometheus/OpenTelemetry metrics
+- [ ] **Encryption**: TLS for both HTTP and SQL protocols
+- [ ] **Advanced Schema Evolution**: Type changes and constraint modifications
 
-### Phase 6: Production (v1.0)
-- [ ] Authentication & Role-Based Access Control (RBAC)
-- [ ] TLS for both HTTP and SQL protocols
-- [ ] Prometheus/OpenTelemetry metrics
-- [ ] Distributed mode (Raft consensus)
-- [ ] Schema Evolution (`ALTER TABLE`)
