@@ -1,5 +1,6 @@
 mod config;
 mod http;
+mod mysql;
 mod sql;
 mod storage;
 #[cfg(test)]
@@ -7,8 +8,9 @@ mod tests;
 
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tracing::{Level, info};
+use tracing::{Level, info, error};
 use tracing_subscriber::FmtSubscriber;
+use crate::mysql::MySqlProtocol;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -41,14 +43,36 @@ async fn main() -> anyhow::Result<()> {
 
     let executor = Arc::new(sql::Executor::new(db));
 
-    let app = http::create_app(executor, config.clone());
+    // 1. MySQL Protocol Task
+    let mysql_executor = executor.clone();
+    let mysql_addr = format!("{}:{}", config.server.host, config.server.sql_port);
+    let mysql_handle = tokio::spawn(async move {
+        let protocol = MySqlProtocol::new(mysql_executor);
+        if let Err(e) = protocol.run(&mysql_addr).await {
+            error!("MySQL protocol error: {}", e);
+        }
+    });
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], config.server.http_port));
+    // 2. HTTP Server Task
+    let http_executor = executor.clone();
+    let http_addr: SocketAddr = format!("{}:{}", config.server.host, config.server.http_port).parse()?;
+    let http_handle = tokio::spawn(async move {
+        let app = http::create_app(http_executor, config);
+        info!("HTTP server listening on http://{}", http_addr);
+        let listener = match tokio::net::TcpListener::bind(http_addr).await {
+            Ok(l) => l,
+            Err(e) => {
+                error!("Failed to bind HTTP listener: {}", e);
+                return;
+            }
+        };
+        if let Err(e) = axum::serve(listener, app).await {
+            error!("HTTP server error: {}", e);
+        }
+    });
 
-    info!("HTTP server listening on http://{}", addr);
-
-    let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
+    // Wait for both tasks
+    let _ = tokio::join!(mysql_handle, http_handle);
 
     Ok(())
 }

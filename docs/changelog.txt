@@ -2,6 +2,7 @@
 
 ## [v0.4.0] - 2026-03-10
 ### Added
+- **MySQL Protocol Compatibility**: Native TCP support on port 3306. Allows standard MySQL clients (CLI, DBeaver, etc.) to connect.
 - **Prepared Statements**: Full support for `PREPARE`, `EXECUTE`, and `DEALLOCATE` commands.
 - **Parameterized Queries**: Support for `?` and `$1`, `$2` style placeholders in SELECT, INSERT, UPDATE, and DELETE.
 - **Enhanced INSERT**: Added support for specifying target columns in INSERT statements (e.g., `INSERT INTO table (col1, col2) VALUES (...)`).

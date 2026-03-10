@@ -80,6 +80,6 @@ server/src/
 | Feature | Status | Description |
 |---------|--------|-------------|
 | SQL Dump/Restore | ✅ Done | Export/Import database state as .sql scripts |
-| MySQL Protocol | 🏗 Todo | Support standard MySQL clients over TCP port 3306 |
+| MySQL Protocol | ✅ Done | Support standard MySQL clients over TCP port 3306 |
 | Parameterized Queries | ✅ Done | Prevention of SQL injection and query reuse |
 | Query Optimization | 🏗 Todo | Cost-based optimizer for join ordering |

@@ -38,7 +38,7 @@
 - [x] Write-Ahead Logging (WAL) for durability
 - [x] Information Schema (tables, columns metadata)
 - [x] SQL Dump/Restore (.sql script export)
-- [ ] MySQL Protocol Compatibility (TCP 3306)
+- [x] MySQL Protocol Compatibility (TCP 3306)
 - [x] Parameterized Queries (Prepared Statements)
 
 ## Code Quality & Refactoring - ✅ COMPLETE

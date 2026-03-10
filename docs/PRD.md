@@ -136,19 +136,22 @@ thy-squeal/                          # Cargo workspace
 - [x] INNER and LEFT JOIN
 - [x] Advanced Indexing (Hash, Composite, JSON, Functional, Partial)
 
-### Phase 4: ACID & Protocol (v0.4)
+### Phase 4: ACID & Protocol (v0.4) - ✅ COMPLETE
 - [x] **Transactions**: BEGIN, COMMIT, ROLLBACK
 - [x] **Write-Ahead Logging (WAL)**: Durability beyond snapshots
 - [x] **Information Schema**: Metadata discoverability
 - [x] **Explain Plan**: Query execution transparency
 - [x] **SQL Dump/Restore**: Export/Import SQL scripts
+- [x] **MySQL Protocol Compatibility**: Native TCP support (Port 3306)
 
-### Phase 5: Ecosystem & Client (v0.5)
-- [ ] **MySQL Protocol Compatibility**: Support standard MySQL clients
+### Phase 5: Compatibility & Ecosystem (v0.5) - 🏗 IN PROGRESS
+- [x] Parameterized Queries (Prepared statements)
 - [x] Client CLI (Clap)
 - [x] REPL with history and HTTP execution
+- [ ] **ALTER TABLE**: Support for schema evolution
+- [ ] **Constraints**: Primary & Foreign Keys
+- [ ] **AUTO_INCREMENT**: Automated ID generation
 - [ ] JavaScript REPL (QuickJS)
-- [x] Parameterized Queries (Prepared statements)
 
 ### Phase 6: Production (v1.0)
 - [ ] Authentication & Role-Based Access Control (RBAC)

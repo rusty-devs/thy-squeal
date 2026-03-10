@@ -2561,6 +2561,8 @@ dependencies = [
  "async-trait",
  "axum",
  "base64",
+ "byteorder",
+ "bytes",
  "chrono",
  "dashmap",
  "futures",

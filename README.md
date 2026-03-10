@@ -5,6 +5,7 @@ A lightweight, MySQL-compatible SQL server with dual-protocol support (SQL over 
 ## Features
 
 - **SQL Engine**: Pest-based parser supporting SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, JOINs, Subqueries, Aggregations, and more.
+- **MySQL Compatible**: Native TCP support on port 3306. Connect via standard `mysql` CLI or GUI tools.
 - **Full-Text Search**: Integrated Tantivy-powered search with `SEARCH` command.
 - **Persistence**: Hybrid in-memory storage with Sled-based snapshotting.
 - **HTTP API**: Axum-based JSON API for easy integration.

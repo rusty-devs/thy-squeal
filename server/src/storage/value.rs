@@ -113,6 +113,12 @@ impl Value {
     }
 }
 
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string_repr())
+    }
+}
+
 impl Eq for Value {}
 
 impl Hash for Value {
