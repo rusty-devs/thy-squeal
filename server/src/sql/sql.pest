@@ -19,7 +19,8 @@ expression_list = { expression ~ ("," ~ expression)* }
 
 // SELECT statement
 select_stmt = { with_clause? ~ select_stmt_inner }
-select_stmt_inner = { KW_SELECT ~ distinct? ~ select_columns ~ (KW_FROM ~ table_name_with_alias ~ join_clause* ~ where_clause? ~ group_by_clause? ~ having_clause? ~ order_by_clause? ~ limit_clause?)? }
+select_stmt_inner = { KW_SELECT ~ distinct? ~ select_columns ~ from_clause? }
+from_clause = { KW_FROM ~ table_name_with_alias ~ join_clause* ~ where_clause? ~ group_by_clause? ~ having_clause? ~ order_by_clause? ~ limit_clause? }
 
 with_clause = { KW_WITH ~ cte_definition ~ ("," ~ cte_definition)* }
 cte_definition = { identifier ~ KW_AS ~ "(" ~ select_stmt_inner ~ ")" }
@@ -94,11 +95,14 @@ group_by_clause = { KW_GROUP ~ KW_BY ~ column_list }
 // HAVING clause
 having_clause = { KW_HAVING ~ condition }
 
-condition = {
-    "(" ~ condition ~ ")" ~ (logical_op ~ condition)? |
+condition = { conjunction ~ (KW_OR ~ conjunction)* }
+conjunction = { primary_condition ~ (KW_AND ~ primary_condition)* }
+primary_condition = {
+    "(" ~ condition ~ ")" |
     expression ~ comparison_op ~ expression |
     expression ~ KW_IS ~ (KW_NOT? ~ KW_NULL) |
-    expression ~ KW_IN ~ "(" ~ select_stmt_inner ~ ")"
+    expression ~ KW_IN ~ "(" ~ select_stmt_inner ~ ")" |
+    KW_NOT ~ primary_condition
 }
 
 comparison_op = { "!=" | "<>" | "<=" | ">=" | "=" | "<" | ">" | "LIKE" | "IN" | "BETWEEN" }

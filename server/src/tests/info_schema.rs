@@ -41,4 +41,18 @@ async fn test_info_schema() {
     assert_eq!(r.rows.len(), 1);
     assert_eq!(r.rows[0][0].as_text(), Some("idx_info_id"));
     assert_eq!(r.rows[0][1].as_bool(), Some(true));
+
+    // 4. Test schemata
+    let res = executor.execute("SELECT schema_name FROM information_schema.schemata", vec![], None).await.unwrap();
+    assert_eq!(res.rows[0][0].as_text(), Some("default"));
+
+    // 5. Test statistics
+    let res = executor.execute("SELECT index_name, column_name FROM information_schema.statistics WHERE table_name = 'info_test'", vec![], None).await.unwrap();
+    assert!(res.rows.len() >= 1);
+    assert_eq!(res.rows[0][0].as_text(), Some("idx_info_id"));
+
+    // 6. Test key_column_usage
+    executor.execute("CREATE TABLE orders (id INT PRIMARY KEY (id), info_id INT, FOREIGN KEY (info_id) REFERENCES info_test(id))", vec![], None).await.unwrap();
+    let res = executor.execute("SELECT constraint_name, referenced_table_name FROM information_schema.key_column_usage WHERE table_name = 'orders' AND column_name = 'info_id'", vec![], None).await.unwrap();
+    assert_eq!(res.rows[0][1].as_text(), Some("info_test"));
 }

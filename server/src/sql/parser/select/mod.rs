@@ -11,6 +11,11 @@ pub use columns::*;
 pub use joins::*;
 
 pub fn parse_select(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
+    if pair.as_rule() == Rule::select_stmt_inner {
+        let stmt = parse_select_inner(pair)?;
+        return Ok(SqlStmt::Select(stmt));
+    }
+
     let mut inner = pair.into_inner();
     let mut with_clause = None;
 
@@ -67,21 +72,28 @@ pub fn parse_select_inner(pair: pest::iterators::Pair<Rule>) -> SqlResult<Select
         match p.as_rule() {
             Rule::distinct => distinct = true,
             Rule::select_columns => columns = parse_select_columns(p)?,
-            Rule::table_name_with_alias => {
-                let mut t_inner = p.into_inner();
-                table = t_inner.next().unwrap().as_str().trim().to_string();
-                if let Some(alias_pair) = t_inner.next() {
-                    table_alias = Some(parse_alias(alias_pair)?);
+            Rule::from_clause => {
+                for from_p in p.into_inner() {
+                    match from_p.as_rule() {
+                        Rule::table_name_with_alias => {
+                            let mut t_inner = from_p.into_inner();
+                            table = t_inner.next().unwrap().as_str().trim().to_string();
+                            if let Some(alias_pair) = t_inner.next() {
+                                table_alias = Some(parse_alias(alias_pair)?);
+                            }
+                        }
+                        Rule::join_clause => joins.push(parse_join(from_p)?),
+                        Rule::where_clause => {
+                            where_clause = Some(parse_condition(from_p.into_inner().nth(1).unwrap())?)
+                        }
+                        Rule::group_by_clause => group_by = parse_group_by(from_p)?,
+                        Rule::having_clause => having = Some(parse_condition(from_p.into_inner().nth(1).unwrap())?),
+                        Rule::order_by_clause => order_by = parse_order_by(from_p)?,
+                        Rule::limit_clause => limit = Some(parse_limit(from_p)?),
+                        _ => {}
+                    }
                 }
             }
-            Rule::join_clause => joins.push(parse_join(p)?),
-            Rule::where_clause => {
-                where_clause = Some(parse_condition(p.into_inner().nth(1).unwrap())?)
-            }
-            Rule::group_by_clause => group_by = parse_group_by(p)?,
-            Rule::having_clause => having = Some(parse_condition(p.into_inner().nth(1).unwrap())?),
-            Rule::order_by_clause => order_by = parse_order_by(p)?,
-            Rule::limit_clause => limit = Some(parse_limit(p)?),
             _ => {}
         }
     }

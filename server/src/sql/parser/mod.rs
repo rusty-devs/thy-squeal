@@ -35,13 +35,10 @@ pub fn parse(sql: &str) -> SqlResult<SqlStmt> {
                         .find(|p| p.as_rule() == Rule::select_stmt_inner)
                         .ok_or_else(|| SqlError::Parse("Missing SELECT in EXPLAIN".to_string()))?;
 
-                    let select_stmt = select::parse_select(inner_select)?;
-                    if let SqlStmt::Select(s) = select_stmt {
-                        Ok(SqlStmt::Explain(s))
-                    } else {
-                        Err(SqlError::Parse("EXPLAIN only supports SELECT".to_string()))
-                    }
+                    let select_stmt = select::parse_select_inner(inner_select)?;
+                    Ok(SqlStmt::Explain(select_stmt))
                 }
+
                 Rule::search_stmt => dml::parse_search(inner),
                 Rule::prepare_stmt => dml::parse_prepare(inner),
                 Rule::execute_stmt => dml::parse_execute(inner),
