@@ -20,16 +20,16 @@ impl Executor {
             let outer_contexts = plan.outer_contexts;
             let params = plan.params;
             let db_state = plan.db_state;
-            let tx_id = plan.tx_id;
+            let session = plan.session;
 
             // 0. Resolve CTEs
             let mut cte_tables = HashMap::new();
             if let Some(with) = &stmt.with_clause {
                 for cte in &with.ctes {
-                    let sub_plan = SelectQueryPlan::new(cte.query.clone(), db_state)
-                        .with_outer_contexts(outer_contexts)
-                        .with_params(params)
-                        .with_transaction(tx_id);
+                    let sub_plan =
+                        SelectQueryPlan::new(cte.query.clone(), db_state, session.clone())
+                            .with_outer_contexts(outer_contexts)
+                            .with_params(params);
 
                     let res = self.exec_select_recursive(sub_plan).await?;
                     let mut cols = Vec::new();
@@ -219,11 +219,7 @@ impl Executor {
                 .any(|c| matches!(c.expr, ast::Expression::FunctionCall(_)));
 
             if has_aggregates || !stmt.group_by.is_empty() {
-                let group_plan = SelectQueryPlan::new(stmt, db_state)
-                    .with_outer_contexts(outer_contexts)
-                    .with_params(params)
-                    .with_transaction(tx_id);
-
+                let group_plan = SelectQueryPlan::new(stmt, db_state, session);
                 return self
                     .exec_select_with_grouping_owned(group_plan, matched_rows, &cte_tables)
                     .await;
@@ -337,7 +333,7 @@ impl Executor {
                 columns: result_columns,
                 rows: projected_rows,
                 rows_affected: 0,
-                transaction_id: tx_id.map(|s| s.to_string()),
+                transaction_id: session.transaction_id,
             })
         }
         .boxed()

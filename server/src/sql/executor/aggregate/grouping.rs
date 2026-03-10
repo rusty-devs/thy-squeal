@@ -17,7 +17,7 @@ impl Executor {
         let outer_contexts = plan.outer_contexts;
         let params = plan.params;
         let db_state = plan.db_state;
-        let tx_id = plan.tx_id;
+        let session = &plan.session;
 
         let base_table = if let Some(t) = cte_tables.get(&stmt.table) {
             t
@@ -176,7 +176,7 @@ impl Executor {
             ),
             rows: result_rows,
             rows_affected: 0,
-            transaction_id: tx_id.map(|s| s.to_string()),
+            transaction_id: session.transaction_id.clone(),
         })
     }
 

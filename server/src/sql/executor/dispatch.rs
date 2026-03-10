@@ -2,7 +2,7 @@ use super::super::ast::SqlStmt;
 use super::super::error::{SqlError, SqlResult};
 use super::super::parser::parse;
 
-use super::{ExecutionContext, Executor, QueryResult, SelectQueryPlan};
+use super::{ExecutionContext, Executor, QueryResult, SelectQueryPlan, Session};
 use crate::storage::{Privilege, Value};
 use futures::future::{BoxFuture, FutureExt};
 
@@ -15,7 +15,8 @@ impl Executor {
         username: Option<String>,
     ) -> BoxFuture<'a, SqlResult<QueryResult>> {
         async move {
-            let ctx = ExecutionContext::new(params, transaction_id, username);
+            let session = Session::new(username, transaction_id);
+            let ctx = ExecutionContext::new(params, session);
 
             let mut res = match stmt {
                 // Transaction control
@@ -52,8 +53,8 @@ impl Executor {
                     self.exec_execute(
                         e,
                         ctx.params.clone(),
-                        ctx.transaction_id.clone(),
-                        Some(ctx.username.clone()),
+                        ctx.session.transaction_id.clone(),
+                        Some(ctx.session.username.clone()),
                     )
                     .await?
                 }
@@ -61,7 +62,7 @@ impl Executor {
             };
 
             if res.transaction_id.is_none() {
-                res.transaction_id = ctx.transaction_id;
+                res.transaction_id = ctx.session.transaction_id.clone();
             }
 
             Ok(res)
@@ -72,8 +73,14 @@ impl Executor {
     async fn dispatch_tx(&self, stmt: SqlStmt, ctx: &ExecutionContext) -> SqlResult<QueryResult> {
         match stmt {
             SqlStmt::Begin => self.exec_begin().await,
-            SqlStmt::Commit => self.exec_commit(ctx.transaction_id.as_deref()).await,
-            SqlStmt::Rollback => self.exec_rollback(ctx.transaction_id.as_deref()).await,
+            SqlStmt::Commit => {
+                self.exec_commit(ctx.session.transaction_id.as_deref())
+                    .await
+            }
+            SqlStmt::Rollback => {
+                self.exec_rollback(ctx.session.transaction_id.as_deref())
+                    .await
+            }
             _ => unreachable!(),
         }
     }
@@ -83,56 +90,66 @@ impl Executor {
             SqlStmt::CreateTable(ct) => {
                 {
                     let db = self.db.read().await;
-                    self.check_privilege(&ctx.username, None, Privilege::Create, db.state())?;
+                    self.check_privilege(
+                        &ctx.session.username,
+                        None,
+                        Privilege::Create,
+                        db.state(),
+                    )?;
                 }
-                self.exec_create_table(ct, ctx.transaction_id.as_deref())
+                self.exec_create_table(ct, ctx.session.transaction_id.as_deref())
                     .await
             }
             SqlStmt::CreateMaterializedView(mv) => {
                 {
                     let db = self.db.read().await;
-                    self.check_privilege(&ctx.username, None, Privilege::Create, db.state())?;
+                    self.check_privilege(
+                        &ctx.session.username,
+                        None,
+                        Privilege::Create,
+                        db.state(),
+                    )?;
                 }
-                self.exec_create_materialized_view(mv, ctx.transaction_id.as_deref())
+                self.exec_create_materialized_view(mv, ctx.session.transaction_id.as_deref())
                     .await
             }
             SqlStmt::AlterTable(at) => {
                 {
                     let db = self.db.read().await;
                     self.check_privilege(
-                        &ctx.username,
+                        &ctx.session.username,
                         Some(&at.table),
                         Privilege::Create,
                         db.state(),
                     )?;
                 }
-                self.exec_alter_table(at, ctx.transaction_id.as_deref())
+                self.exec_alter_table(at, ctx.session.transaction_id.as_deref())
                     .await
             }
             SqlStmt::DropTable(dt) => {
                 {
                     let db = self.db.read().await;
                     self.check_privilege(
-                        &ctx.username,
+                        &ctx.session.username,
                         Some(&dt.name),
                         Privilege::Drop,
                         db.state(),
                     )?;
                 }
-                self.exec_drop_table(dt, ctx.transaction_id.as_deref())
+                self.exec_drop_table(dt, ctx.session.transaction_id.as_deref())
                     .await
             }
             SqlStmt::CreateIndex(ci) => {
                 {
                     let db = self.db.read().await;
                     self.check_privilege(
-                        &ctx.username,
+                        &ctx.session.username,
                         Some(&ci.table),
                         Privilege::Create,
                         db.state(),
                     )?;
                 }
-                self.exec_create_index(ci, ctx.transaction_id.as_deref())
+                self.exec_create_index(ci, ctx.session.transaction_id.as_deref())
                     .await
             }
             _ => unreachable!(),
@@ -145,39 +162,39 @@ impl Executor {
                 {
                     let db = self.db.read().await;
                     self.check_privilege(
-                        &ctx.username,
+                        &ctx.session.username,
                         Some(&i.table),
                         Privilege::Insert,
                         db.state(),
                     )?;
                 }
-                self.exec_insert(i, &ctx.params, ctx.transaction_id.as_deref())
+                self.exec_insert(i, &ctx.params, ctx.session.transaction_id.as_deref())
                     .await
             }
             SqlStmt::Update(u) => {
                 {
                     let db = self.db.read().await;
                     self.check_privilege(
-                        &ctx.username,
+                        &ctx.session.username,
                         Some(&u.table),
                         Privilege::Update,
                         db.state(),
                     )?;
                 }
-                self.exec_update(u, &ctx.params, ctx.transaction_id.as_deref())
+                self.exec_update(u, &ctx.params, ctx.session.transaction_id.as_deref())
                     .await
             }
             SqlStmt::Delete(d) => {
                 {
                     let db = self.db.read().await;
                     self.check_privilege(
-                        &ctx.username,
+                        &ctx.session.username,
                         Some(&d.table),
                         Privilege::Delete,
                         db.state(),
                     )?;
                 }
-                self.exec_delete(d, &ctx.params, ctx.transaction_id.as_deref())
+                self.exec_delete(d, &ctx.params, ctx.session.transaction_id.as_deref())
                     .await
             }
             _ => unreachable!(),
@@ -187,16 +204,25 @@ impl Executor {
     async fn dispatch_user(&self, stmt: SqlStmt, ctx: &ExecutionContext) -> SqlResult<QueryResult> {
         {
             let db = self.db.read().await;
-            self.check_privilege(&ctx.username, None, Privilege::Grant, db.state())?;
+            self.check_privilege(&ctx.session.username, None, Privilege::Grant, db.state())?;
         }
         match stmt {
             SqlStmt::CreateUser(cu) => {
-                self.exec_create_user(cu, ctx.transaction_id.as_deref())
+                self.exec_create_user(cu, ctx.session.transaction_id.as_deref())
                     .await
             }
-            SqlStmt::DropUser(du) => self.exec_drop_user(du, ctx.transaction_id.as_deref()).await,
-            SqlStmt::Grant(g) => self.exec_grant(g, ctx.transaction_id.as_deref()).await,
-            SqlStmt::Revoke(r) => self.exec_revoke(r, ctx.transaction_id.as_deref()).await,
+            SqlStmt::DropUser(du) => {
+                self.exec_drop_user(du, ctx.session.transaction_id.as_deref())
+                    .await
+            }
+            SqlStmt::Grant(g) => {
+                self.exec_grant(g, ctx.session.transaction_id.as_deref())
+                    .await
+            }
+            SqlStmt::Revoke(r) => {
+                self.exec_revoke(r, ctx.session.transaction_id.as_deref())
+                    .await
+            }
             _ => unreachable!(),
         }
     }
@@ -209,53 +235,58 @@ impl Executor {
         match stmt {
             SqlStmt::Select(s) => {
                 let table = s.table.clone();
-                if let Some(id) = &ctx.transaction_id {
+                if let Some(id) = &ctx.session.transaction_id {
                     let state = self
                         .transactions
                         .get(id)
                         .ok_or_else(|| SqlError::Runtime("Transaction not found".to_string()))?;
                     if !table.is_empty() && !table.starts_with("information_schema.") {
                         self.check_privilege(
-                            &ctx.username,
+                            &ctx.session.username,
                             Some(&table),
                             Privilege::Select,
                             &state,
                         )?;
                     }
 
-                    let plan = SelectQueryPlan::new(s, &state)
-                        .with_params(&ctx.params)
-                        .with_transaction(Some(id));
+                    let plan = SelectQueryPlan::new(s, &state, ctx.session.clone())
+                        .with_params(&ctx.params);
 
                     self.exec_select_recursive(plan).await
                 } else {
                     let db = self.db.read().await;
                     if !table.is_empty() && !table.starts_with("information_schema.") {
                         self.check_privilege(
-                            &ctx.username,
+                            &ctx.session.username,
                             Some(&table),
                             Privilege::Select,
                             db.state(),
                         )?;
                     }
 
-                    let plan = SelectQueryPlan::new(s, db.state()).with_params(&ctx.params);
+                    let plan = SelectQueryPlan::new(s, db.state(), ctx.session.clone())
+                        .with_params(&ctx.params);
 
                     self.exec_select_recursive(plan).await
                 }
             }
             SqlStmt::Search(s) => {
-                if let Some(id) = &ctx.transaction_id {
+                if let Some(id) = &ctx.session.transaction_id {
                     let state = self
                         .transactions
                         .get(id)
                         .ok_or_else(|| SqlError::Runtime("Transaction not found".to_string()))?;
-                    self.check_privilege(&ctx.username, Some(&s.table), Privilege::Select, &state)?;
+                    self.check_privilege(
+                        &ctx.session.username,
+                        Some(&s.table),
+                        Privilege::Select,
+                        &state,
+                    )?;
                     self.exec_search(s, &state, Some(id)).await
                 } else {
                     let db = self.db.read().await;
                     self.check_privilege(
-                        &ctx.username,
+                        &ctx.session.username,
                         Some(&s.table),
                         Privilege::Select,
                         db.state(),
@@ -264,7 +295,7 @@ impl Executor {
                 }
             }
             SqlStmt::Explain(s) => {
-                if let Some(id) = &ctx.transaction_id {
+                if let Some(id) = &ctx.session.transaction_id {
                     let state = self
                         .transactions
                         .get(id)

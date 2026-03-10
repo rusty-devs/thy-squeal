@@ -81,7 +81,8 @@ impl Executor {
                     )));
                 }
 
-                let plan = super::SelectQueryPlan::new(stmt.query.clone(), state);
+                let plan =
+                    super::SelectQueryPlan::new(stmt.query.clone(), state, super::Session::root());
                 let res = futures::executor::block_on(self.exec_select_recursive(plan))
                     .map_err(|e: SqlError| SqlError::Storage(e.to_string()))?;
 

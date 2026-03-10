@@ -14,33 +14,41 @@ pub mod user;
 
 use super::ast::SqlStmt;
 use super::error::{SqlError, SqlResult};
-use super::eval::Evaluator;
-use super::parser::parse;
 use crate::storage::{Database, DatabaseState, Privilege, Row, Table, Value};
-
 use dashmap::DashMap;
 use futures::future::BoxFuture;
 
 pub use result::QueryResult;
 
+/// A user session containing authentication and transaction state.
+#[derive(Clone, Debug)]
+pub struct Session {
+    pub username: String,
+    pub transaction_id: Option<String>,
+}
+
+impl Session {
+    pub fn new(username: Option<String>, transaction_id: Option<String>) -> Self {
+        Self {
+            username: username.unwrap_or_else(|| "root".to_string()),
+            transaction_id,
+        }
+    }
+
+    pub fn root() -> Self {
+        Self::new(None, None)
+    }
+}
+
 /// Context for statement execution
 pub struct ExecutionContext {
     pub params: Vec<Value>,
-    pub transaction_id: Option<String>,
-    pub username: String,
+    pub session: Session,
 }
 
 impl ExecutionContext {
-    pub fn new(
-        params: Vec<Value>,
-        transaction_id: Option<String>,
-        username: Option<String>,
-    ) -> Self {
-        Self {
-            params,
-            transaction_id,
-            username: username.unwrap_or_else(|| "root".to_string()),
-        }
+    pub fn new(params: Vec<Value>, session: Session) -> Self {
+        Self { params, session }
     }
 }
 
@@ -51,17 +59,21 @@ pub struct SelectQueryPlan<'a> {
     pub outer_contexts: &'a [(&'a Table, Option<&'a str>, &'a Row)],
     pub params: &'a [Value],
     pub db_state: &'a DatabaseState,
-    pub tx_id: Option<&'a str>,
+    pub session: Session,
 }
 
 impl<'a> SelectQueryPlan<'a> {
-    pub fn new(stmt: super::ast::SelectStmt, db_state: &'a DatabaseState) -> Self {
+    pub fn new(
+        stmt: super::ast::SelectStmt,
+        db_state: &'a DatabaseState,
+        session: Session,
+    ) -> Self {
         Self {
             stmt,
             outer_contexts: &[],
             params: &[],
             db_state,
-            tx_id: None,
+            session,
         }
     }
 
@@ -75,11 +87,6 @@ impl<'a> SelectQueryPlan<'a> {
 
     pub fn with_params(mut self, params: &'a [Value]) -> Self {
         self.params = params;
-        self
-    }
-
-    pub fn with_transaction(mut self, tx_id: Option<&'a str>) -> Self {
-        self.tx_id = tx_id;
         self
     }
 }
@@ -106,7 +113,7 @@ impl Executor {
         transaction_id: Option<String>,
         username: Option<String>,
     ) -> SqlResult<QueryResult> {
-        let stmt = parse(sql)?;
+        let stmt = super::parser::parse(sql)?;
         self.exec_stmt(stmt, params, transaction_id, username).await
     }
 
@@ -117,19 +124,10 @@ impl Executor {
         privilege: Privilege,
         db_state: &DatabaseState,
     ) -> SqlResult<()> {
-        println!(
-            "CHECK PRIVILEGE: user={}, table={:?}, priv={:?}",
-            username, table, privilege
-        );
         let user = db_state
             .users
             .get(username)
             .ok_or_else(|| SqlError::Runtime(format!("User {} not found", username)))?;
-
-        println!(
-            "USER PRIVS: global={:?}, table={:?}",
-            user.global_privileges, user.table_privileges
-        );
 
         // root always has All
         if user.global_privileges.contains(&Privilege::All) {
@@ -147,7 +145,7 @@ impl Executor {
             return Ok(());
         }
 
-        Err(SqlError::Runtime(format!(
+        Err(SqlError::PermissionDenied(format!(
             "User {} does not have {:?} privilege{}",
             username,
             privilege,
@@ -160,7 +158,7 @@ impl Executor {
     pub fn refresh_materialized_views(&self, state: &mut DatabaseState) -> SqlResult<()> {
         let views = state.materialized_views.clone();
         for (name, query) in views {
-            let plan = SelectQueryPlan::new(query, state);
+            let plan = SelectQueryPlan::new(query, state, Session::root());
             let res = futures::executor::block_on(self.exec_select_recursive(plan))?;
 
             if let Some(table) = state.tables.get_mut(&name) {
@@ -179,7 +177,7 @@ impl Executor {
     }
 }
 
-impl Evaluator for Executor {
+impl crate::sql::eval::Evaluator for Executor {
     fn exec_select_internal<'a>(
         &'a self,
         stmt: super::ast::SelectStmt,
@@ -187,7 +185,7 @@ impl Evaluator for Executor {
         params: &'a [Value],
         db_state: &'a DatabaseState,
     ) -> BoxFuture<'a, SqlResult<QueryResult>> {
-        let plan = SelectQueryPlan::new(stmt, db_state)
+        let plan = SelectQueryPlan::new(stmt, db_state, Session::root())
             .with_outer_contexts(outer_contexts)
             .with_params(params);
         self.exec_select_recursive(plan)
