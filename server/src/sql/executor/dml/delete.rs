@@ -1,6 +1,6 @@
-use super::super::super::squeal::Delete;
 use super::super::super::error::{SqlError, SqlResult};
 use super::super::super::eval::{EvalContext, Evaluator, evaluate_condition_joined};
+use super::super::super::squeal::Delete;
 use super::super::{Executor, QueryResult};
 use crate::storage::WalRecord;
 

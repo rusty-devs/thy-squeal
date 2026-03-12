@@ -1,6 +1,6 @@
-use super::super::super::squeal::{Condition, Expression, ComparisonOp, IsOp};
 use super::super::super::error::{SqlError, SqlResult};
 use super::super::super::eval::{EvalContext, Evaluator, evaluate_expression_joined};
+use super::super::super::squeal::{ComparisonOp, Condition, Expression, IsOp};
 use super::super::select::JoinedContext;
 use super::super::{Executor, QueryResult, SelectQueryPlan};
 use crate::storage::{DatabaseState, Row, Table, Value};
@@ -193,14 +193,17 @@ impl Executor {
                     db_state,
                 ))
                 .await?;
-                if !l { return Ok(false); }
+                if !l {
+                    return Ok(false);
+                }
                 Box::pin(self.evaluate_having_joined(
                     right,
                     contexts,
                     params,
                     outer_contexts,
                     db_state,
-                )).await
+                ))
+                .await
             }
             Condition::Or(left, right) => {
                 let l = Box::pin(self.evaluate_having_joined(
@@ -211,14 +214,17 @@ impl Executor {
                     db_state,
                 ))
                 .await?;
-                if l { return Ok(true); }
+                if l {
+                    return Ok(true);
+                }
                 Box::pin(self.evaluate_having_joined(
                     right,
                     contexts,
                     params,
                     outer_contexts,
                     db_state,
-                )).await
+                ))
+                .await
             }
             Condition::Not(c) => Ok(!Box::pin(self.evaluate_having_joined(
                 c,
@@ -226,7 +232,8 @@ impl Executor {
                 params,
                 outer_contexts,
                 db_state,
-            )).await?),
+            ))
+            .await?),
             Condition::Comparison(left, op, right) => {
                 let left_val = self
                     .evaluate_having_expression_joined(
@@ -258,7 +265,13 @@ impl Executor {
             }
             Condition::Is(expr, op) => {
                 let val = self
-                    .evaluate_having_expression_joined(expr, contexts, params, outer_contexts, db_state)
+                    .evaluate_having_expression_joined(
+                        expr,
+                        contexts,
+                        params,
+                        outer_contexts,
+                        db_state,
+                    )
                     .await?;
                 match op {
                     IsOp::Null => Ok(matches!(val, Value::Null)),
@@ -292,10 +305,28 @@ impl Executor {
                 Ok(false)
             }
             Condition::In(expr, values) => {
-                let val = self.evaluate_having_expression_joined(expr, contexts, params, outer_contexts, db_state).await?;
+                let val = self
+                    .evaluate_having_expression_joined(
+                        expr,
+                        contexts,
+                        params,
+                        outer_contexts,
+                        db_state,
+                    )
+                    .await?;
                 for v_expr in values {
-                    let v = self.evaluate_having_expression_joined(v_expr, contexts, params, outer_contexts, db_state).await?;
-                    if v == val { return Ok(true); }
+                    let v = self
+                        .evaluate_having_expression_joined(
+                            v_expr,
+                            contexts,
+                            params,
+                            outer_contexts,
+                            db_state,
+                        )
+                        .await?;
+                    if v == val {
+                        return Ok(true);
+                    }
                 }
                 Ok(false)
             }
@@ -304,21 +335,59 @@ impl Executor {
                 if let Some(first_ctx) = contexts.first() {
                     combined_outer.extend_from_slice(first_ctx);
                 }
-                let result = self.exec_select_internal((**subquery).clone(), &combined_outer, params, db_state).await?;
+                let result = self
+                    .exec_select_internal((**subquery).clone(), &combined_outer, params, db_state)
+                    .await?;
                 Ok(!result.rows.is_empty())
             }
             Condition::Between(expr, low, high) => {
-                let val = self.evaluate_having_expression_joined(expr, contexts, params, outer_contexts, db_state).await?;
-                let l = self.evaluate_having_expression_joined(low, contexts, params, outer_contexts, db_state).await?;
-                let h = self.evaluate_having_expression_joined(high, contexts, params, outer_contexts, db_state).await?;
+                let val = self
+                    .evaluate_having_expression_joined(
+                        expr,
+                        contexts,
+                        params,
+                        outer_contexts,
+                        db_state,
+                    )
+                    .await?;
+                let l = self
+                    .evaluate_having_expression_joined(
+                        low,
+                        contexts,
+                        params,
+                        outer_contexts,
+                        db_state,
+                    )
+                    .await?;
+                let h = self
+                    .evaluate_having_expression_joined(
+                        high,
+                        contexts,
+                        params,
+                        outer_contexts,
+                        db_state,
+                    )
+                    .await?;
                 Ok(val >= l && val <= h)
             }
             Condition::Like(expr, pattern) => {
-                let val = self.evaluate_having_expression_joined(expr, contexts, params, outer_contexts, db_state).await?;
-                let l = val.as_text().ok_or_else(|| SqlError::TypeMismatch("LIKE requires text".to_string()))?;
+                let val = self
+                    .evaluate_having_expression_joined(
+                        expr,
+                        contexts,
+                        params,
+                        outer_contexts,
+                        db_state,
+                    )
+                    .await?;
+                let l = val
+                    .as_text()
+                    .ok_or_else(|| SqlError::TypeMismatch("LIKE requires text".to_string()))?;
                 Ok(l.contains(&pattern.replace('%', "")))
             }
-            Condition::FullTextSearch(_, _) => Err(SqlError::Runtime("FullTextSearch not allowed in HAVING".to_string())),
+            Condition::FullTextSearch(_, _) => Err(SqlError::Runtime(
+                "FullTextSearch not allowed in HAVING".to_string(),
+            )),
         }
     }
 
@@ -382,9 +451,7 @@ impl Executor {
                     Ok(Value::Null)
                 }
             }
-            Expression::Star => {
-                Err(SqlError::Runtime("Star not allowed in HAVING".to_string()))
-            }
+            Expression::Star => Err(SqlError::Runtime("Star not allowed in HAVING".to_string())),
         }
     }
 }

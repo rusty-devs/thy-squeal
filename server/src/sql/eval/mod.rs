@@ -2,8 +2,8 @@ pub mod column;
 pub mod condition;
 pub mod expression;
 
-use super::squeal::{Condition, Expression, Select};
 use super::error::{SqlError, SqlResult};
+use super::squeal::{Condition, Expression, Select};
 use crate::storage::{DatabaseState, Row, Table, Value};
 use futures::FutureExt;
 use futures::future::BoxFuture;

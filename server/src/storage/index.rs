@@ -1,6 +1,6 @@
+use crate::storage::Value;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
-use crate::storage::Value;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TableIndex {
@@ -67,7 +67,11 @@ impl TableIndex {
         }
     }
 
-    pub fn insert(&mut self, key: Vec<Value>, row_id: String) -> Result<(), super::error::StorageError> {
+    pub fn insert(
+        &mut self,
+        key: Vec<Value>,
+        row_id: String,
+    ) -> Result<(), super::error::StorageError> {
         let unique = self.is_unique();
         match self {
             TableIndex::BTree { data, .. } => {

@@ -71,12 +71,7 @@ pub fn apply_record(
         } => {
             state.tables.insert(
                 name.clone(),
-                Table::new(
-                    name,
-                    columns,
-                    primary_key,
-                    foreign_keys,
-                ),
+                Table::new(name, columns, primary_key, foreign_keys),
             );
         }
         WalRecord::CreateMaterializedView { name, query, .. } => {

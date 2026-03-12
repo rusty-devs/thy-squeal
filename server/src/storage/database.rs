@@ -1,12 +1,12 @@
 use super::error::StorageError;
 use super::persistence::{Persister, WalRecord};
-use super::row::{Column, Row, ForeignKey};
+use super::row::{Column, ForeignKey, Row};
 use super::table::Table;
 use super::types::DataType;
 use super::value::Value;
 use super::wal;
 use crate::sql::eval::Evaluator;
-use crate::sql::squeal::{Select, Expression};
+use crate::sql::squeal::{Expression, Select};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

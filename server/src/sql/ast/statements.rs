@@ -1,6 +1,6 @@
 use super::condition::Condition;
 use super::expression::Expression;
-use crate::storage::{Column, Privilege, ForeignKey};
+use crate::storage::{Column, ForeignKey, Privilege};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

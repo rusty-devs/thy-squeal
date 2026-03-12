@@ -1,5 +1,5 @@
-use super::super::super::squeal::ScalarFuncType;
 use super::super::super::error::{SqlError, SqlResult};
+use super::super::super::squeal::ScalarFuncType;
 use crate::storage::Value;
 
 pub fn evaluate_scalar_func(name: &ScalarFuncType, args: &[Value]) -> SqlResult<Value> {

@@ -1,8 +1,8 @@
-use super::super::squeal::{
-    AlterAction, AlterTable, CreateIndex, CreateMaterializedView, CreateTable,
-    DropTable, IndexType, Expression
-};
 use super::super::error::{SqlError, SqlResult};
+use super::super::squeal::{
+    AlterAction, AlterTable, CreateIndex, CreateMaterializedView, CreateTable, DropTable,
+    Expression, IndexType,
+};
 use super::{Executor, QueryResult, SelectQueryPlan, Session};
 use crate::storage::{Table, WalRecord};
 

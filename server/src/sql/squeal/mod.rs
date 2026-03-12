@@ -1,5 +1,5 @@
 use super::ast::{self, SqlStmt};
-use crate::storage::{Column, Privilege, Value, ForeignKey};
+use crate::storage::{Column, ForeignKey, Privilege, Value};
 use serde::{Deserialize, Serialize};
 
 /// Squeal Internal Representation (IR) of a query.
@@ -231,17 +231,31 @@ pub struct ScalarFunction {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ScalarFuncType {
-    Lower, Upper, Length, Abs, Now, Concat, Coalesce, Replace,
+    Lower,
+    Upper,
+    Length,
+    Abs,
+    Now,
+    Concat,
+    Coalesce,
+    Replace,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum AggregateType {
-    Count, Sum, Avg, Min, Max,
+    Count,
+    Sum,
+    Avg,
+    Min,
+    Max,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum BinaryOp {
-    Add, Sub, Mul, Div,
+    Add,
+    Sub,
+    Mul,
+    Div,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -261,7 +275,12 @@ pub enum Condition {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ComparisonOp {
-    Eq, Neq, Lt, Lte, Gt, Gte,
+    Eq,
+    Neq,
+    Lt,
+    Lte,
+    Gt,
+    Gte,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -278,7 +297,9 @@ impl Expression {
             Expression::Literal(v) => format!("{:?}", v),
             Expression::Placeholder(i) => format!("?{}", i),
             Expression::Column(c) => c.clone(),
-            Expression::BinaryOp(l, op, r) => format!("({} {} {})", l.to_sql(), op.to_sql(), r.to_sql()),
+            Expression::BinaryOp(l, op, r) => {
+                format!("({} {} {})", l.to_sql(), op.to_sql(), r.to_sql())
+            }
             Expression::FunctionCall(f) => format!("{:?}({:?})", f.name, f.args),
             Expression::ScalarFunc(f) => format!("{:?}({:?})", f.name, f.args),
             Expression::Star => "*".to_string(),
@@ -454,7 +475,9 @@ impl From<ast::Expression> for Expression {
 impl From<ast::Condition> for Condition {
     fn from(c: ast::Condition) -> Self {
         match c {
-            ast::Condition::And(l, r) => Condition::And(Box::new((*l).into()), Box::new((*r).into())),
+            ast::Condition::And(l, r) => {
+                Condition::And(Box::new((*l).into()), Box::new((*r).into()))
+            }
             ast::Condition::Or(l, r) => Condition::Or(Box::new((*l).into()), Box::new((*r).into())),
             ast::Condition::Not(c) => Condition::Not(Box::new((*c).into())),
             ast::Condition::Comparison(l, op, r) => Condition::Comparison(
@@ -470,8 +493,13 @@ impl From<ast::Condition> for Condition {
                 },
                 r.into(),
             ),
-            ast::Condition::In(e, v) => Condition::In(e.into(), v.into_iter().map(|x: ast::Expression| x.into()).collect()),
-            ast::Condition::InSubquery(e, s) => Condition::InSubquery(e.into(), Box::new((*s).into())),
+            ast::Condition::In(e, v) => Condition::In(
+                e.into(),
+                v.into_iter().map(|x: ast::Expression| x.into()).collect(),
+            ),
+            ast::Condition::InSubquery(e, s) => {
+                Condition::InSubquery(e.into(), Box::new((*s).into()))
+            }
             ast::Condition::Exists(s) => Condition::Exists(Box::new((*s).into())),
             ast::Condition::Between(e, l, h) => Condition::Between(e.into(), l.into(), h.into()),
             ast::Condition::Is(e, op) => Condition::Is(
@@ -509,7 +537,11 @@ impl From<ast::UpdateStmt> for Update {
     fn from(s: ast::UpdateStmt) -> Self {
         Update {
             table: s.table,
-            assignments: s.assignments.into_iter().map(|(c, e)| (c, e.into())).collect(),
+            assignments: s
+                .assignments
+                .into_iter()
+                .map(|(c, e)| (c, e.into()))
+                .collect(),
             where_clause: s.where_clause.map(|w| w.into()),
         }
     }
@@ -551,7 +583,9 @@ impl From<ast::AlterTableStmt> for AlterTable {
             action: match s.action {
                 ast::AlterAction::AddColumn(c) => AlterAction::AddColumn(c),
                 ast::AlterAction::DropColumn(c) => AlterAction::DropColumn(c),
-                ast::AlterAction::RenameColumn { old_name, new_name } => AlterAction::RenameColumn { old_name, new_name },
+                ast::AlterAction::RenameColumn { old_name, new_name } => {
+                    AlterAction::RenameColumn { old_name, new_name }
+                }
                 ast::AlterAction::RenameTable(t) => AlterAction::RenameTable(t),
             },
         }
@@ -576,9 +610,7 @@ impl From<ast::CreateIndexStmt> for CreateIndex {
 
 impl From<ast::DropTableStmt> for DropTable {
     fn from(s: ast::DropTableStmt) -> Self {
-        DropTable {
-            name: s.name,
-        }
+        DropTable { name: s.name }
     }
 }
 

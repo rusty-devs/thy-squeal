@@ -1,5 +1,5 @@
-use super::super::super::squeal::BinaryOp;
 use super::super::super::error::{SqlError, SqlResult};
+use super::super::super::squeal::BinaryOp;
 use crate::storage::Value;
 
 pub fn evaluate_binary_op(l: Value, op: &BinaryOp, r: Value) -> SqlResult<Value> {

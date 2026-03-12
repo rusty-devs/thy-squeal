@@ -3,8 +3,8 @@ use super::super::index::TableIndex;
 use super::super::row::Row;
 use super::super::value::Value;
 use super::Table;
-use crate::sql::squeal::{Condition, Expression};
 use crate::sql::eval::{EvalContext, Evaluator, evaluate_condition_joined};
+use crate::sql::squeal::{Condition, Expression};
 use crate::storage::DatabaseState;
 use std::collections::HashMap;
 

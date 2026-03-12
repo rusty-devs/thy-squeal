@@ -1,5 +1,5 @@
-use super::super::squeal::Search;
 use super::super::error::{SqlError, SqlResult};
+use super::super::squeal::Search;
 use super::{Executor, QueryResult};
 use crate::storage::Value;
 

@@ -1,5 +1,5 @@
-use super::super::squeal::{ComparisonOp, Condition, IsOp};
 use super::super::error::{SqlError, SqlResult};
+use super::super::squeal::{ComparisonOp, Condition, IsOp};
 use super::expression::evaluate_expression_joined;
 use super::{EvalContext, Evaluator};
 use crate::storage::Value;
@@ -102,7 +102,7 @@ pub fn evaluate_condition_joined(
             let l = val.as_text().ok_or_else(|| {
                 SqlError::TypeMismatch("LIKE requires text on the left".to_string())
             })?;
-            
+
             if pattern.starts_with('%') && pattern.ends_with('%') {
                 let pat = &pattern[1..pattern.len() - 1];
                 Ok(l.contains(pat))
@@ -115,9 +115,11 @@ pub fn evaluate_condition_joined(
             }
         }
         Condition::FullTextSearch(_field, _query) => {
-            // This is usually handled at the table level using indexes, 
+            // This is usually handled at the table level using indexes,
             // but for manual evaluation (if needed):
-            Err(SqlError::Runtime("FullTextSearch must be handled by the storage engine".to_string()))
+            Err(SqlError::Runtime(
+                "FullTextSearch must be handled by the storage engine".to_string(),
+            ))
         }
     }
 }

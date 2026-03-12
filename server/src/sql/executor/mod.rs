@@ -13,7 +13,7 @@ pub mod tx;
 pub mod user;
 
 use super::error::{SqlError, SqlResult};
-use super::squeal::{Squeal, Select};
+use super::squeal::{Select, Squeal};
 use crate::storage::{Database, DatabaseState, Privilege, Row, Table, Value};
 use dashmap::DashMap;
 use futures::future::BoxFuture;
@@ -63,11 +63,7 @@ pub struct SelectQueryPlan<'a> {
 }
 
 impl<'a> SelectQueryPlan<'a> {
-    pub fn new(
-        stmt: Select,
-        db_state: &'a DatabaseState,
-        session: Session,
-    ) -> Self {
+    pub fn new(stmt: Select, db_state: &'a DatabaseState, session: Session) -> Self {
         Self {
             stmt,
             outer_contexts: &[],
@@ -123,7 +119,8 @@ impl Executor {
         // Workflow: SQL string -> AST (Pest) -> Squeal (IR) -> Executor
         let ast = super::parser::parse(sql)?;
         let squeal = Squeal::from(ast);
-        self.exec_squeal(squeal, params, transaction_id, username).await
+        self.exec_squeal(squeal, params, transaction_id, username)
+            .await
     }
 
     pub async fn execute_squeal(
@@ -133,7 +130,8 @@ impl Executor {
         transaction_id: Option<String>,
         username: Option<String>,
     ) -> SqlResult<QueryResult> {
-        self.exec_squeal(squeal, params, transaction_id, username).await
+        self.exec_squeal(squeal, params, transaction_id, username)
+            .await
     }
 
     pub fn check_privilege(
@@ -177,7 +175,7 @@ impl Executor {
     pub fn refresh_materialized_views(&self, state: &mut DatabaseState) -> SqlResult<()> {
         let views = state.materialized_views.clone();
         for (name, query) in views {
-            let plan = SelectQueryPlan::new(query.into(), state, Session::root());
+            let plan = SelectQueryPlan::new(query, state, Session::root());
             let res = futures::executor::block_on(self.exec_select_recursive(plan))?;
 
             if let Some(table) = state.tables.get_mut(&name) {

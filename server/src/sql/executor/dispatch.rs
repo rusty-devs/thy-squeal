@@ -1,6 +1,6 @@
-use super::super::squeal::Squeal;
 use super::super::error::{SqlError, SqlResult};
 use super::super::parser::parse;
+use super::super::squeal::Squeal;
 
 use super::{ExecutionContext, Executor, QueryResult, SelectQueryPlan, Session};
 use crate::storage::{Privilege, Value};
@@ -227,11 +227,7 @@ impl Executor {
         }
     }
 
-    async fn dispatch_query(
-        &self,
-        stmt: Squeal,
-        ctx: &ExecutionContext,
-    ) -> SqlResult<QueryResult> {
+    async fn dispatch_query(&self, stmt: Squeal, ctx: &ExecutionContext) -> SqlResult<QueryResult> {
         match stmt {
             Squeal::Select(s) => {
                 let table = s.table.clone();

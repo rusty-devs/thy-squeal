@@ -1,5 +1,5 @@
-use super::super::squeal::{Select, Condition, ComparisonOp, Expression};
 use super::super::error::{SqlError, SqlResult};
+use super::super::squeal::{ComparisonOp, Condition, Expression, Select};
 use super::{Executor, QueryResult};
 use crate::storage::{DatabaseState, TableIndex, Value};
 
@@ -31,7 +31,7 @@ impl Executor {
 
             for (name, index) in &table.indexes.secondary {
                 let exprs = index.expressions();
-                if exprs.len() == 1 && &Expression::from(exprs[0].clone()) == left_expr {
+                if exprs.len() == 1 && &exprs[0] == left_expr {
                     let key = vec![val.clone()];
                     let estimated = if let Some(ids) = index.get(&key) {
                         ids.len()

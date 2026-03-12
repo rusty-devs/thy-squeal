@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 
 use super::error::StorageError;
 use super::index::TableIndex;
-use super::row::{Column, Row, ForeignKey};
+use super::row::{Column, ForeignKey, Row};
 use super::search::SearchIndex;
 use super::value::Value;
 

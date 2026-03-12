@@ -6,8 +6,8 @@ pub use condition::*;
 pub use expression::*;
 pub use statements::*;
 
-use serde::{Deserialize, Serialize};
 use super::squeal;
+use serde::{Deserialize, Serialize};
 
 /// Parsed SQL statement AST.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -193,8 +193,12 @@ impl From<squeal::Expression> for Expression {
 impl From<squeal::Condition> for Condition {
     fn from(c: squeal::Condition) -> Self {
         match c {
-            squeal::Condition::And(l, r) => Condition::And(Box::new((*l).into()), Box::new((*r).into())),
-            squeal::Condition::Or(l, r) => Condition::Or(Box::new((*l).into()), Box::new((*r).into())),
+            squeal::Condition::And(l, r) => {
+                Condition::And(Box::new((*l).into()), Box::new((*r).into()))
+            }
+            squeal::Condition::Or(l, r) => {
+                Condition::Or(Box::new((*l).into()), Box::new((*r).into()))
+            }
             squeal::Condition::Not(c) => Condition::Not(Box::new((*c).into())),
             squeal::Condition::Comparison(l, op, r) => Condition::Comparison(
                 l.into(),
@@ -208,8 +212,15 @@ impl From<squeal::Condition> for Condition {
                 },
                 r.into(),
             ),
-            squeal::Condition::In(e, v) => Condition::In(e.into(), v.into_iter().map(|x: squeal::Expression| x.into()).collect()),
-            squeal::Condition::InSubquery(e, s) => Condition::InSubquery(e.into(), Box::new((*s).into())),
+            squeal::Condition::In(e, v) => Condition::In(
+                e.into(),
+                v.into_iter()
+                    .map(|x: squeal::Expression| x.into())
+                    .collect(),
+            ),
+            squeal::Condition::InSubquery(e, s) => {
+                Condition::InSubquery(e.into(), Box::new((*s).into()))
+            }
             squeal::Condition::Exists(s) => Condition::Exists(Box::new((*s).into())),
             squeal::Condition::Between(e, l, h) => Condition::Between(e.into(), l.into(), h.into()),
             squeal::Condition::Is(e, op) => Condition::Is(

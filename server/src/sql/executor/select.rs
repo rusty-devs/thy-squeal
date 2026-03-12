@@ -1,6 +1,6 @@
-use super::super::squeal::{self, Select};
 use super::super::error::{SqlError, SqlResult};
 use super::super::eval::{EvalContext, evaluate_condition_joined, evaluate_expression_joined};
+use super::super::squeal::{self, Select};
 use super::{Executor, QueryResult, SelectQueryPlan};
 use crate::storage::info_schema::get_info_schema_tables;
 use crate::storage::{DatabaseState, Row, Table};
@@ -91,7 +91,7 @@ impl Executor {
                     {
                         for (idx_name, index) in &t.indexes.secondary {
                             let exprs = index.expressions();
-                            if exprs.len() == 1 && &squeal::Expression::from(exprs[0].clone()) == left_expr {
+                            if exprs.len() == 1 && &exprs[0] == left_expr {
                                 let key = vec![val.clone()];
                                 let estimated = if let Some(ids) = index.get(&key) {
                                     ids.len()
