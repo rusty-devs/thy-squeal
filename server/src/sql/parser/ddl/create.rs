@@ -4,7 +4,7 @@ use super::super::super::ast::{
 use super::super::super::error::{SqlError, SqlResult};
 use super::super::utils::expect_identifier;
 use crate::sql::parser::Rule;
-use crate::storage::{Column, DataType};
+use crate::storage::{Column, DataType, ForeignKey};
 
 pub fn parse_create_table(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStmt> {
     let mut inner = pair.into_inner();
@@ -95,7 +95,7 @@ pub fn parse_create_table(pair: pest::iterators::Pair<Rule>) -> SqlResult<SqlStm
                     .map(|p| p.as_str().trim().to_string())
                     .collect();
 
-                foreign_keys.push(crate::sql::ast::ForeignKey {
+                foreign_keys.push(ForeignKey {
                     columns: local_cols,
                     ref_table,
                     ref_columns: ref_cols,

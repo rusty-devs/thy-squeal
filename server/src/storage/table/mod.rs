@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 
 use super::error::StorageError;
 use super::index::TableIndex;
-use super::row::{Column, Row};
+use super::row::{Column, Row, ForeignKey};
 use super::search::SearchIndex;
 use super::value::Value;
 
@@ -18,7 +18,7 @@ pub struct TableSchema {
     pub name: String,
     pub columns: Vec<Column>,
     pub primary_key: Option<Vec<String>>,
-    pub foreign_keys: Vec<crate::sql::ast::ForeignKey>,
+    pub foreign_keys: Vec<ForeignKey>,
 }
 
 /// Data storage for a table (rows, auto-increment state)
@@ -123,7 +123,7 @@ impl Table {
         name: String,
         columns: Vec<Column>,
         primary_key: Option<Vec<String>>,
-        foreign_keys: Vec<crate::sql::ast::ForeignKey>,
+        foreign_keys: Vec<ForeignKey>,
     ) -> Self {
         let mut auto_inc_counters = HashMap::new();
         for (i, col) in columns.iter().enumerate() {

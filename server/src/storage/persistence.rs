@@ -1,7 +1,8 @@
 use super::error::StorageError;
-use super::row::Column;
+use super::row::{Column, ForeignKey};
 use super::table::Table;
 use super::value::Value;
+use crate::sql::squeal;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -21,17 +22,17 @@ pub enum WalRecord {
         name: String,
         columns: Vec<Column>,
         primary_key: Option<Vec<String>>,
-        foreign_keys: Vec<crate::sql::ast::ForeignKey>,
+        foreign_keys: Vec<ForeignKey>,
     },
     CreateMaterializedView {
         tx_id: Option<String>,
         name: String,
-        query: Box<crate::sql::ast::SelectStmt>,
+        query: Box<squeal::Select>,
     },
     AlterTable {
         tx_id: Option<String>,
         table: String,
-        action: crate::sql::ast::AlterAction,
+        action: squeal::AlterAction,
     },
     DropTable {
         tx_id: Option<String>,
@@ -57,10 +58,10 @@ pub enum WalRecord {
         tx_id: Option<String>,
         table: String,
         name: String,
-        expressions: Vec<crate::sql::ast::Expression>,
+        expressions: Vec<squeal::Expression>,
         unique: bool,
         use_hash: bool,
-        where_clause: Option<crate::sql::ast::Condition>,
+        where_clause: Option<squeal::Condition>,
     },
 }
 

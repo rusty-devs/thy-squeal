@@ -1,5 +1,5 @@
 use super::ast::{self, SqlStmt};
-use crate::storage::{Column, Privilege, Value};
+use crate::storage::{Column, Privilege, Value, ForeignKey};
 use serde::{Deserialize, Serialize};
 
 /// Squeal Internal Representation (IR) of a query.
@@ -125,13 +125,6 @@ pub struct CreateTable {
 pub struct CreateMaterializedView {
     pub name: String,
     pub query: Select,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ForeignKey {
-    pub columns: Vec<String>,
-    pub ref_table: String,
-    pub ref_columns: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -537,7 +530,7 @@ impl From<ast::CreateTableStmt> for CreateTable {
             name: s.name,
             columns: s.columns,
             primary_key: s.primary_key,
-            foreign_keys: s.foreign_keys.into_iter().map(|f| f.into()).collect(),
+            foreign_keys: s.foreign_keys,
         }
     }
 }
@@ -547,16 +540,6 @@ impl From<ast::CreateMaterializedViewStmt> for CreateMaterializedView {
         CreateMaterializedView {
             name: s.name,
             query: s.query.into(),
-        }
-    }
-}
-
-impl From<ast::ForeignKey> for ForeignKey {
-    fn from(f: ast::ForeignKey) -> Self {
-        ForeignKey {
-            columns: f.columns,
-            ref_table: f.ref_table,
-            ref_columns: f.ref_columns,
         }
     }
 }

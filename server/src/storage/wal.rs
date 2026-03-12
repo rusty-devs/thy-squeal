@@ -71,14 +71,19 @@ pub fn apply_record(
         } => {
             state.tables.insert(
                 name.clone(),
-                Table::new(name, columns, primary_key, foreign_keys),
+                Table::new(
+                    name,
+                    columns,
+                    primary_key,
+                    foreign_keys,
+                ),
             );
         }
         WalRecord::CreateMaterializedView { name, query, .. } => {
-            state.materialized_views.insert(name, (*query).into());
+            state.materialized_views.insert(name, *query);
         }
         WalRecord::AlterTable { table, action, .. } => {
-            use crate::sql::ast::AlterAction;
+            use crate::sql::squeal::AlterAction;
             if let Some(t) = state.get_table_mut(&table) {
                 match action {
                     AlterAction::AddColumn(col) => t.add_column(col)?,
@@ -131,10 +136,10 @@ pub fn apply_record(
                 t.create_index(
                     evaluator,
                     name,
-                    expressions.into_iter().map(|e| e.into()).collect(),
+                    expressions,
                     unique,
                     use_hash,
-                    where_clause.map(|w| w.into()),
+                    where_clause,
                     &db_state,
                 )?;
             }

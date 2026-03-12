@@ -14,6 +14,13 @@ pub struct Column {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RowId(pub String);
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ForeignKey {
+    pub columns: Vec<String>,
+    pub ref_table: String,
+    pub ref_columns: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Row {
     pub id: String,

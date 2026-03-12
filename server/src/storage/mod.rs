@@ -14,7 +14,7 @@ pub use database::{Database, DatabaseState, Privilege, User};
 pub use error::StorageError;
 pub use index::TableIndex;
 pub use persistence::WalRecord;
-pub use row::{Column, Row};
+pub use row::{Column, Row, ForeignKey};
 pub use table::Table;
 pub use types::DataType;
 pub use value::Value;

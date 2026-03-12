@@ -1,6 +1,6 @@
 use super::error::StorageError;
 use super::persistence::{Persister, WalRecord};
-use super::row::{Column, Row};
+use super::row::{Column, Row, ForeignKey};
 use super::table::Table;
 use super::types::DataType;
 use super::value::Value;
@@ -190,7 +190,7 @@ impl Database {
         name: String,
         columns: Vec<Column>,
         primary_key: Option<Vec<String>>,
-        foreign_keys: Vec<crate::sql::ast::ForeignKey>,
+        foreign_keys: Vec<ForeignKey>,
     ) -> Result<(), StorageError> {
         if self.state.tables.contains_key(&name) {
             return Err(StorageError::DuplicateKey(name));

@@ -202,7 +202,7 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
 
             // Extract column names from index expressions if possible
             for (i, expr) in index.expressions().iter().enumerate() {
-                let col_name = match expr {
+                let col_name: String = match expr {
                     crate::sql::squeal::Expression::Column(c) => c.clone(),
                     _ => format!("expr_{}", i),
                 };
@@ -274,6 +274,7 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
         // Primary Key
         if let Some(ref pk_cols) = table.schema.primary_key {
             for col_name in pk_cols {
+                let col_name: String = col_name.clone();
                 kcu_table.data.rows.push(Row {
                     id: format!("{}_pk_{}", t_name, col_name),
                     values: vec![
@@ -281,7 +282,7 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
                         Value::Text("PRIMARY".to_string()),
                         Value::Text("default".to_string()),
                         Value::Text(t_name.clone()),
-                        Value::Text(col_name.clone()),
+                        Value::Text(col_name),
                         Value::Null,
                         Value::Null,
                         Value::Null,

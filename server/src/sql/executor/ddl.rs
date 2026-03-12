@@ -25,11 +25,7 @@ impl Executor {
                 name: name.clone(),
                 columns: columns.clone(),
                 primary_key: primary_key.clone(),
-                foreign_keys: foreign_keys.iter().map(|f| crate::sql::ast::ForeignKey {
-                    columns: f.columns.clone(),
-                    ref_table: f.ref_table.clone(),
-                    ref_columns: f.ref_columns.clone(),
-                }).collect(),
+                foreign_keys: foreign_keys.clone(),
             })?;
         }
 
@@ -48,11 +44,7 @@ impl Executor {
                 name.clone(),
                 columns,
                 primary_key.clone(),
-                foreign_keys.iter().map(|f| crate::sql::ast::ForeignKey {
-                    columns: f.columns.clone(),
-                    ref_table: f.ref_table.clone(),
-                    ref_columns: f.ref_columns.clone(),
-                }).collect(),
+                foreign_keys.clone(),
             );
 
             // Enable search index automatically
@@ -72,7 +64,7 @@ impl Executor {
                     format!("pk_{}", name),
                     pk_exprs,
                     true,  // unique
-                    false, // btree (hash=false means btree)
+                    false, // btree
                     None,  // no where clause
                     state,
                 )?;
@@ -96,6 +88,16 @@ impl Executor {
         stmt: CreateMaterializedView,
         tx_id: Option<&str>,
     ) -> SqlResult<QueryResult> {
+        // 1. Log to WAL
+        {
+            let db = self.db.read().await;
+            db.log_operation(&WalRecord::CreateMaterializedView {
+                tx_id: tx_id.map(|s| s.to_string()),
+                name: stmt.name.clone(),
+                query: Box::new(stmt.query.clone()),
+            })?;
+        }
+
         self.mutate_state(tx_id, |state| {
             if state.tables.contains_key(&stmt.name) {
                 return Err(SqlError::Storage(
@@ -193,10 +195,10 @@ impl Executor {
                 tx_id: tx_id.map(|s| s.to_string()),
                 table: table_name.clone(),
                 name: index_name.clone(),
-                expressions: stmt.expressions.iter().map(|e| e.clone().into()).collect(),
+                expressions: stmt.expressions.clone(),
                 unique: stmt.unique,
                 use_hash: matches!(stmt.index_type, IndexType::Hash),
-                where_clause: stmt.where_clause.clone().map(|w| w.into()),
+                where_clause: stmt.where_clause.clone(),
             })?;
         }
 
@@ -239,15 +241,7 @@ impl Executor {
             db.log_operation(&WalRecord::AlterTable {
                 tx_id: tx_id.map(|s| s.to_string()),
                 table: stmt.table.clone(),
-                action: match &stmt.action {
-                    AlterAction::AddColumn(c) => crate::sql::ast::AlterAction::AddColumn(c.clone()),
-                    AlterAction::DropColumn(c) => crate::sql::ast::AlterAction::DropColumn(c.clone()),
-                    AlterAction::RenameColumn { old_name, new_name } => crate::sql::ast::AlterAction::RenameColumn { 
-                        old_name: old_name.clone(), 
-                        new_name: new_name.clone() 
-                    },
-                    AlterAction::RenameTable(t) => crate::sql::ast::AlterAction::RenameTable(t.clone()),
-                },
+                action: stmt.action.clone(),
             })?;
         }
 
