@@ -1,7 +1,7 @@
 use super::super::super::error::{SqlError, SqlResult};
 use super::super::super::eval::{EvalContext, Evaluator, evaluate_condition_joined};
-use crate::squeal::Delete;
 use super::super::{Executor, QueryResult};
+use crate::squeal::Delete;
 use crate::storage::WalRecord;
 
 impl Executor {

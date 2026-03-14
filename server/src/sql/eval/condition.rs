@@ -1,7 +1,7 @@
 use super::super::error::{SqlError, SqlResult};
-use crate::squeal::{ComparisonOp, Condition, IsOp};
 use super::expression::evaluate_expression_joined;
 use super::{EvalContext, Evaluator};
+use crate::squeal::{ComparisonOp, Condition, IsOp};
 use crate::storage::Value;
 
 pub fn evaluate_condition_joined(

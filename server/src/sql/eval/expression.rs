@@ -3,9 +3,9 @@ pub mod function;
 pub mod subquery;
 
 use super::super::error::{SqlError, SqlResult};
-use crate::squeal::Expression;
 use super::column::resolve_column;
 use super::{EvalContext, Evaluator};
+use crate::squeal::Expression;
 use crate::storage::Value;
 
 pub fn evaluate_expression_joined(

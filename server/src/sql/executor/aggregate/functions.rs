@@ -1,7 +1,7 @@
 use super::super::super::error::{SqlError, SqlResult};
 use super::super::super::eval::{EvalContext, evaluate_expression_joined};
-use crate::squeal::{AggregateType, Expression, FunctionCall};
 use super::super::Executor;
+use crate::squeal::{AggregateType, Expression, FunctionCall};
 use crate::storage::{DatabaseState, Row, Table, Value};
 
 impl Executor {

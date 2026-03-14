@@ -1,7 +1,7 @@
-use crate::sql::ast::{self, SqlStmt};
 use super::cond::*;
 use super::expr::*;
 use super::stmt::*;
+use crate::sql::ast::{self, SqlStmt};
 
 // Conversions from AST to Squeal IR
 impl From<SqlStmt> for Squeal {

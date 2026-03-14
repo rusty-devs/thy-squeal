@@ -1,6 +1,6 @@
 use super::super::super::error::{SqlError, SqlResult};
-use crate::squeal::Select;
 use super::super::Evaluator;
+use crate::squeal::Select;
 use crate::storage::{DatabaseState, Row, Table, Value};
 
 pub fn evaluate_subquery(

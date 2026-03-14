@@ -1,6 +1,6 @@
 use super::super::error::{SqlError, SqlResult};
-use crate::squeal::{ComparisonOp, Condition, Expression, Select};
 use super::{Executor, QueryResult};
+use crate::squeal::{ComparisonOp, Condition, Expression, Select};
 use crate::storage::{DatabaseState, TableIndex, Value};
 
 impl Executor {

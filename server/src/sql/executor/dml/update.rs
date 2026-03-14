@@ -2,8 +2,8 @@ use super::super::super::error::{SqlError, SqlResult};
 use super::super::super::eval::{
     EvalContext, Evaluator, evaluate_condition_joined, evaluate_expression_joined,
 };
-use crate::squeal::Update;
 use super::super::{Executor, QueryResult};
+use crate::squeal::Update;
 use crate::storage::{Value, WalRecord};
 
 impl Executor {

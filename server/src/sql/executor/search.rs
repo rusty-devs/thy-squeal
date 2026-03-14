@@ -1,6 +1,6 @@
 use super::super::error::{SqlError, SqlResult};
-use crate::squeal::Search;
 use super::{Executor, QueryResult};
+use crate::squeal::Search;
 use crate::storage::Value;
 
 impl Executor {
