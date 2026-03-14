@@ -2,7 +2,7 @@ use super::error::StorageError;
 use super::row::{Column, ForeignKey};
 use super::table::Table;
 use super::value::Value;
-use crate::sql::squeal;
+use crate::squeal;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

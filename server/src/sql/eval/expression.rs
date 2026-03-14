@@ -3,7 +3,7 @@ pub mod function;
 pub mod subquery;
 
 use super::super::error::{SqlError, SqlResult};
-use super::super::squeal::Expression;
+use crate::squeal::Expression;
 use super::column::resolve_column;
 use super::{EvalContext, Evaluator};
 use crate::storage::Value;

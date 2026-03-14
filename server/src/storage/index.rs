@@ -26,7 +26,7 @@ impl TableIndex {
         }
     }
 
-    pub fn expressions(&self) -> Vec<crate::sql::squeal::Expression> {
+    pub fn expressions(&self) -> Vec<crate::squeal::Expression> {
         let exprs = match self {
             TableIndex::BTree { expressions, .. } => expressions,
             TableIndex::Hash { expressions, .. } => expressions,
@@ -37,7 +37,7 @@ impl TableIndex {
             .collect()
     }
 
-    pub fn where_clause(&self) -> Option<crate::sql::squeal::Condition> {
+    pub fn where_clause(&self) -> Option<crate::squeal::Condition> {
         let cond = match self {
             TableIndex::BTree { where_clause, .. } => where_clause,
             TableIndex::Hash { where_clause, .. } => where_clause,

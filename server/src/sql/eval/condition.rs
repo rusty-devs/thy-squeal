@@ -1,5 +1,5 @@
 use super::super::error::{SqlError, SqlResult};
-use super::super::squeal::{ComparisonOp, Condition, IsOp};
+use crate::squeal::{ComparisonOp, Condition, IsOp};
 use super::expression::evaluate_expression_joined;
 use super::{EvalContext, Evaluator};
 use crate::storage::Value;

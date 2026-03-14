@@ -1,5 +1,5 @@
 use super::super::error::{SqlError, SqlResult};
-use super::super::squeal::{
+use crate::squeal::{
     AlterAction, AlterTable, CreateIndex, CreateMaterializedView, CreateTable, DropTable,
     Expression, IndexType,
 };

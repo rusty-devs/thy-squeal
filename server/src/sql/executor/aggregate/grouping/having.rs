@@ -1,7 +1,7 @@
 use crate::sql::error::{SqlError, SqlResult};
 use crate::sql::eval::{EvalContext, Evaluator, evaluate_expression_joined};
 use crate::sql::executor::Executor;
-use crate::sql::squeal::{ComparisonOp, Condition, Expression, IsOp};
+use crate::squeal::{ComparisonOp, Condition, Expression, IsOp};
 use crate::storage::{DatabaseState, Row, Table, Value};
 
 impl Executor {

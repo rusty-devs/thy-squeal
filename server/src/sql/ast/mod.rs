@@ -6,7 +6,7 @@ pub use condition::*;
 pub use expression::*;
 pub use statements::*;
 
-use super::squeal;
+use crate::squeal;
 use serde::{Deserialize, Serialize};
 
 /// Parsed SQL statement AST.

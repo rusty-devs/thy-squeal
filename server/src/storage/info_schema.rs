@@ -203,7 +203,7 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
             // Extract column names from index expressions if possible
             for (i, expr) in index.expressions().iter().enumerate() {
                 let col_name: String = match expr {
-                    crate::sql::squeal::Expression::Column(c) => c.clone(),
+                    crate::squeal::Expression::Column(c) => c.clone(),
                     _ => format!("expr_{}", i),
                 };
 

@@ -1,5 +1,5 @@
 use super::super::error::{SqlError, SqlResult};
-use super::super::squeal::{CreateUser, DropUser, Grant, Revoke};
+use crate::squeal::{CreateUser, DropUser, Grant, Revoke};
 use super::{Executor, QueryResult};
 use crate::storage::User;
 use std::collections::HashMap;

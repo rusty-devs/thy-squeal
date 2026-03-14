@@ -2,7 +2,7 @@ use super::project::JoinedContext;
 use crate::sql::error::{SqlError, SqlResult};
 use crate::sql::eval::{EvalContext, evaluate_condition_joined};
 use crate::sql::executor::{Executor, SelectQueryPlan};
-use crate::sql::squeal;
+use crate::squeal;
 use crate::storage::{Row, Table};
 use std::collections::HashMap;
 

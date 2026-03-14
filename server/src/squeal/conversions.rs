@@ -1,4 +1,4 @@
-use super::ast::{self, SqlStmt};
+use crate::sql::ast::{self, SqlStmt};
 use super::cond::*;
 use super::expr::*;
 use super::stmt::*;

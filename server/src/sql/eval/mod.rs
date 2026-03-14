@@ -3,7 +3,7 @@ pub mod condition;
 pub mod expression;
 
 use super::error::{SqlError, SqlResult};
-use super::squeal::{Condition, Expression, Select};
+use crate::squeal::{Condition, Expression, Select};
 use crate::storage::{DatabaseState, Row, Table, Value};
 use futures::FutureExt;
 use futures::future::BoxFuture;

@@ -1,6 +1,6 @@
 use crate::sql::executor::Executor;
-use crate::sql::squeal;
-use crate::sql::squeal::Select;
+use crate::squeal;
+use crate::squeal::Select;
 use crate::storage::{DatabaseState, Row, Table};
 use std::collections::HashMap;
 

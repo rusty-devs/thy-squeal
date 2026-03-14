@@ -2,6 +2,7 @@ mod config;
 mod http;
 mod mysql;
 mod sql;
+mod squeal;
 mod storage;
 #[cfg(test)]
 mod tests;

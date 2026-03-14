@@ -3,7 +3,7 @@ pub mod conversions;
 pub mod expr;
 pub mod stmt;
 
-use super::ast;
+use crate::sql::ast;
 
 pub use cond::*;
 pub use expr::*;

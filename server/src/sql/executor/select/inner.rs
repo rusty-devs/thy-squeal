@@ -6,7 +6,7 @@ pub mod project;
 use crate::sql::error::SqlResult;
 use crate::sql::eval::{EvalContext, evaluate_condition_joined, evaluate_expression_joined};
 use crate::sql::executor::{Executor, QueryResult, SelectQueryPlan};
-use crate::sql::squeal;
+use crate::squeal;
 use crate::storage::{Row, Table};
 use futures::FutureExt;
 use futures::future::BoxFuture;

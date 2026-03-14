@@ -6,7 +6,7 @@ use super::types::DataType;
 use super::value::Value;
 use super::wal;
 use crate::sql::eval::Evaluator;
-use crate::sql::squeal::{Expression, Select};
+use crate::squeal::{Expression, Select};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

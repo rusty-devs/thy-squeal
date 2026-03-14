@@ -24,9 +24,9 @@ server/src/
 ├── main.rs          # Entry point
 ├── http.rs          # Axum HTTP handlers (SQL & JSqueal)
 ├── mysql/           # MySQL Protocol handler
+├── squeal/          # Internal Representation (IR)
 ├── sql/             # SQL Engine
 │   ├── ast/         # Decomposed AST definitions
-│   ├── squeal/      # Internal Representation (IR)
 │   ├── error.rs     # SQL Errors
 │   ├── eval/        # Modular IR expression evaluation
 │   ├── executor/    # Specialized IR statement executors

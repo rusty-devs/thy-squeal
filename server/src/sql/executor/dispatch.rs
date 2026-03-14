@@ -1,6 +1,6 @@
 use super::super::error::{SqlError, SqlResult};
 use super::super::parser::parse;
-use super::super::squeal::Squeal;
+use crate::squeal::Squeal;
 
 use super::{ExecutionContext, Executor, QueryResult, SelectQueryPlan, Session};
 use crate::storage::{Privilege, Value};
@@ -308,7 +308,7 @@ impl Executor {
 
     pub(crate) async fn exec_prepare(
         &self,
-        stmt: crate::sql::squeal::Prepare,
+        stmt: crate::squeal::Prepare,
     ) -> SqlResult<QueryResult> {
         let inner_stmt = parse(&stmt.sql)?;
         let squeal = Squeal::from(inner_stmt);
@@ -323,7 +323,7 @@ impl Executor {
 
     pub(crate) async fn exec_execute(
         &self,
-        stmt: crate::sql::squeal::Execute,
+        stmt: crate::squeal::Execute,
         params: Vec<Value>,
         transaction_id: Option<String>,
         username: Option<String>,

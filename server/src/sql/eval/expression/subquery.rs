@@ -1,5 +1,5 @@
 use super::super::super::error::{SqlError, SqlResult};
-use super::super::super::squeal::Select;
+use crate::squeal::Select;
 use super::super::Evaluator;
 use crate::storage::{DatabaseState, Row, Table, Value};
 

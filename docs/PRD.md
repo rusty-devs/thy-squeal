@@ -89,6 +89,7 @@ thy-squeal/                          # Cargo workspace
 │       ├── config.rs                # YAML config loading
 │       ├── http.rs                  # Axum HTTP handlers
 │       ├── mysql/                   # MySQL Protocol handler
+│       ├── squeal/                  # Internal Representation (IR)
 │       ├── storage/                 # Modular storage engine
 │       │   ├── database.rs          # Database state management
 │       │   ├── table/               # Table, Index, and Mutation logic
@@ -101,7 +102,7 @@ thy-squeal/                          # Cargo workspace
 │       │   ├── parser/              # Modular Pest-based parsing
 │       │   ├── executor/            # Specialized statement executors
 │       │   └── error.rs             # SqlError enum
-│       └── sql.pest                 # SQL grammar (Pest)
+
 ├── client/                          # Client crate
 ├── docs/
 └── LICENSE, README.md

@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::sql::executor::Executor;
-    use crate::sql::squeal::{Expression, Insert, Select, SelectColumn, Squeal};
+    use crate::squeal::{Expression, Insert, Select, SelectColumn, Squeal};
     use crate::storage::{Database, Value};
 
     #[tokio::test]
@@ -35,9 +35,9 @@ mod tests {
             table_alias: None,
             distinct: false,
             joins: vec![],
-            where_clause: Some(crate::sql::squeal::Condition::Comparison(
+            where_clause: Some(crate::squeal::Condition::Comparison(
                 Expression::Column("id".to_string()),
-                crate::sql::squeal::ComparisonOp::Eq,
+                crate::squeal::ComparisonOp::Eq,
                 Expression::Literal(Value::Int(1)),
             )),
             group_by: vec![],

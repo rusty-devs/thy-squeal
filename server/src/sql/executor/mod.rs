@@ -12,8 +12,8 @@ mod tests;
 pub mod tx;
 pub mod user;
 
+use crate::squeal::{Select, Squeal};
 use super::error::{SqlError, SqlResult};
-use super::squeal::{Select, Squeal};
 use crate::storage::{Database, DatabaseState, Privilege, Row, Table, Value};
 use dashmap::DashMap;
 use futures::future::BoxFuture;

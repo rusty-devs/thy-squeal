@@ -78,7 +78,7 @@ pub fn apply_record(
             state.materialized_views.insert(name, *query);
         }
         WalRecord::AlterTable { table, action, .. } => {
-            use crate::sql::squeal::AlterAction;
+            use crate::squeal::AlterAction;
             if let Some(t) = state.get_table_mut(&table) {
                 match action {
                     AlterAction::AddColumn(col) => t.add_column(col)?,
