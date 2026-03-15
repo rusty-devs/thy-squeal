@@ -96,6 +96,12 @@ pub struct Executor {
     pub(crate) transactions: DashMap<String, DatabaseState>,
     pub(crate) prepared_statements: DashMap<String, Squeal>, // name -> stmt
     pub(crate) data_dir: Option<String>,
+    pub(crate) pubsub: Arc<tokio::sync::RwLock<PubSubState>>,
+}
+
+#[derive(Default)]
+pub struct PubSubState {
+    pub subscriptions: HashMap<String, HashSet<String>>, // client_id -> channels
 }
 
 impl Executor {
@@ -105,6 +111,7 @@ impl Executor {
             transactions: DashMap::new(),
             prepared_statements: DashMap::new(),
             data_dir: None,
+            pubsub: Arc::new(tokio::sync::RwLock::new(PubSubState::default())),
         }
     }
 
@@ -1096,6 +1103,75 @@ impl Executor {
         Ok(QueryResult {
             columns: vec!["length".to_string()],
             rows: vec![vec![Value::Int(len as i64)]],
+            rows_affected: 0,
+            transaction_id: None,
+        })
+    }
+
+    pub async fn pubsub_subscribe(&self, client_id: String, channel: String) -> SqlResult<()> {
+        let mut state = self.pubsub.write().await;
+        state
+            .subscriptions
+            .entry(client_id)
+            .or_insert_with(HashSet::new)
+            .insert(channel);
+        Ok(())
+    }
+
+    pub async fn pubsub_unsubscribe(
+        &self,
+        client_id: String,
+        channel: Option<String>,
+    ) -> SqlResult<()> {
+        let mut state = self.pubsub.write().await;
+        if let Some(channels) = state.subscriptions.get_mut(&client_id) {
+            match channel {
+                Some(ch) => {
+                    channels.remove(&ch);
+                }
+                None => {
+                    channels.clear();
+                }
+            }
+        }
+        if state
+            .subscriptions
+            .get(&client_id)
+            .map(|s| s.is_empty())
+            .unwrap_or(false)
+        {
+            state.subscriptions.remove(&client_id);
+        }
+        Ok(())
+    }
+
+    pub async fn pubsub_publish(&self, channel: String, _message: String) -> SqlResult<usize> {
+        let state = self.pubsub.read().await;
+        let count = state
+            .subscriptions
+            .values()
+            .filter(|channels| channels.contains(&channel))
+            .count();
+        Ok(count)
+    }
+
+    pub async fn pubsub_channels(&self) -> SqlResult<Vec<String>> {
+        let state = self.pubsub.read().await;
+        let mut channels: Vec<String> = state
+            .subscriptions
+            .values()
+            .flat_map(|s| s.iter().cloned())
+            .collect();
+        channels.sort();
+        channels.dedup();
+        Ok(channels)
+    }
+
+    pub async fn exec_pubsub_publish(&self, kv: squeal::PubSubPublish) -> SqlResult<QueryResult> {
+        let count = self.pubsub_publish(kv.channel, kv.message).await?;
+        Ok(QueryResult {
+            columns: vec!["count".to_string()],
+            rows: vec![vec![Value::Int(count as i64)]],
             rows_affected: 0,
             transaction_id: None,
         })

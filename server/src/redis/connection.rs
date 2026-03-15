@@ -680,6 +680,93 @@ pub async fn handle_connection(mut socket: TcpStream, executor: Arc<Executor>) -
                 let len = executor.kv_stream_len(&key, None).await?;
                 RespValue::Integer(len as i64).write(&mut socket).await?;
             }
+            "PUBLISH" => {
+                if cmd_array.len() < 3 {
+                    RespValue::Error(
+                        "ERR wrong number of arguments for 'publish' command".to_string(),
+                    )
+                    .write(&mut socket)
+                    .await?;
+                    continue;
+                }
+                let channel = extract_bulk_string(&cmd_array[1])?;
+                let message = extract_bulk_string(&cmd_array[2])?;
+                let count = executor.pubsub_publish(channel, message).await?;
+                RespValue::Integer(count as i64).write(&mut socket).await?;
+            }
+            "SUBSCRIBE" | "PSUBSCRIBE" => {
+                if cmd_array.len() < 2 {
+                    RespValue::Error(
+                        "ERR wrong number of arguments for 'subscribe' command".to_string(),
+                    )
+                    .write(&mut socket)
+                    .await?;
+                    continue;
+                }
+                let client_id = format!("{:p}", &socket);
+                for item in cmd_array.iter().skip(1) {
+                    let channel = extract_bulk_string(item)?;
+                    executor
+                        .pubsub_subscribe(client_id.clone(), channel.clone())
+                        .await?;
+                    RespValue::Array(Some(vec![
+                        RespValue::SimpleString("subscribe".to_string()),
+                        RespValue::BulkString(Some(channel.into_bytes())),
+                        RespValue::Integer(1),
+                    ]))
+                    .write(&mut socket)
+                    .await?;
+                }
+            }
+            "UNSUBSCRIBE" | "PUNSUBSCRIBE" => {
+                let client_id = format!("{:p}", &socket);
+                if cmd_array.len() < 2 {
+                    executor.pubsub_unsubscribe(client_id, None).await?;
+                } else {
+                    for item in cmd_array.iter().skip(1) {
+                        let channel = extract_bulk_string(item)?;
+                        executor
+                            .pubsub_unsubscribe(client_id.clone(), Some(channel))
+                            .await?;
+                    }
+                }
+                RespValue::Array(Some(vec![
+                    RespValue::SimpleString("unsubscribe".to_string()),
+                    RespValue::BulkString(None),
+                    RespValue::Integer(0),
+                ]))
+                .write(&mut socket)
+                .await?;
+            }
+            "PUBSUB" => {
+                if cmd_array.len() < 2 {
+                    RespValue::Error(
+                        "ERR wrong number of arguments for 'pubsub' command".to_string(),
+                    )
+                    .write(&mut socket)
+                    .await?;
+                    continue;
+                }
+                let subcommand = extract_bulk_string(&cmd_array[1])?.to_uppercase();
+                match subcommand.as_str() {
+                    "CHANNELS" => {
+                        let channels = executor.pubsub_channels().await?;
+                        let result: Vec<RespValue> = channels
+                            .into_iter()
+                            .map(|c| RespValue::BulkString(Some(c.into_bytes())))
+                            .collect();
+                        RespValue::Array(Some(result)).write(&mut socket).await?;
+                    }
+                    "NUMSUB" => {
+                        RespValue::Integer(0).write(&mut socket).await?;
+                    }
+                    _ => {
+                        RespValue::Error("ERR Unknown PUBSUB subcommand".to_string())
+                            .write(&mut socket)
+                            .await?;
+                    }
+                }
+            }
             "QUIT" => {
                 RespValue::SimpleString("OK".to_string())
                     .write(&mut socket)

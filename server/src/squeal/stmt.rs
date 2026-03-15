@@ -43,6 +43,7 @@ pub enum Squeal {
     KvStreamAdd(KvStreamAdd),
     KvStreamRange(KvStreamRange),
     KvStreamLen(KvStreamLen),
+    PubSubPublish(PubSubPublish),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -132,6 +133,12 @@ pub struct KvStreamRange {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct KvStreamLen {
     pub key: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PubSubPublish {
+    pub channel: String,
+    pub message: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -117,6 +117,7 @@ impl Executor {
                     self.exec_kv_stream_len(kv, ctx.session.transaction_id.as_deref())
                         .await?
                 }
+                Squeal::PubSubPublish(kv) => self.exec_pubsub_publish(kv).await?,
             };
 
             if res.transaction_id.is_none() {
