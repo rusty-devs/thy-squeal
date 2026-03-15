@@ -174,16 +174,16 @@ thy-squeal/                          # Cargo workspace
 - [x] **Materialized Views**: Automatically refreshing pre-calculated query results
 - [x] **User Authentication & RBAC**: Secure access control
 
-### Phase 6: Key-Value Storage (v0.6) - 🏗 IN PROGRESS
-- [ ] **Redis Protocol Compatibility**: Support for RESP protocol on port 6379
-- [ ] **Core Commands**: GET, SET, DEL, EXISTS, EXPIRE, TTL
-- [ ] **Data Structures**: Lists, Sets, Hashes, Sorted Sets, **Streams (XADD, XREAD, etc.)**
-- [ ] **Persistence**: RDB-style snapshots and AOF (Append Only File) integration with existing WAL
-- [ ] **Pub/Sub**: Basic message queuing and notification system
+### Phase 6: Key-Value Storage (v0.6) - ✅ COMPLETE
+- [x] **Redis Protocol Compatibility**: Support for RESP protocol on port 6379
+- [x] **Core Commands**: GET, SET, DEL, EXISTS, EXPIRE, TTL, KEYS
+- [x] **Data Structures**: Lists, Sets, Hashes, Sorted Sets, **Streams (XADD, XREAD, etc.)**
+- [x] **Persistence**: RDB-style snapshots and AOF (Append Only File) integration with existing WAL
+- [x] **Pub/Sub**: Basic message queuing and notification system
 - [ ] **SQL Integration**: Querying Key-Value data via SQL virtual tables
 
 ### Phase 7: Production & Distributed (v1.0) - 🏗 IN PROGRESS
-- [ ] **JSqueal**: JSON-based query language (direct AST mapping, bypassing Pest parser)
+- [x] **JSqueal**: JSON-based query language (direct IR mapping, bypassing Pest parser)
 - [ ] **JavaScript Query Interface**: QuickJS integration
 - [ ] **Distributed Mode**: multi-node replication (Raft)
 - [ ] **Telemetry**: Prometheus/OpenTelemetry metrics

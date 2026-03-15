@@ -1,94 +1,106 @@
 # Key-Value Store
 
 ## Overview
-Redis-compatible in-memory key-value store with multiple data structures.
+Redis-compatible in-memory key-value store with multiple data structures. Accessible via Redis protocol (RESP on port 6379) and JSqueal (JSON API).
 
 ## Storage Backend
-- Primary: `DashMap` for concurrent access
-- Persistence: `sled` for optional disk persistence
+- Primary: In-memory hash maps for concurrent access
+- Persistence: Sled-based snapshots and WAL for durability
 
-## Configuration
-```yaml
-storage:
-  data_dir: "./data"
-  snapshot_interval_sec: 300
-```
-
-## Data Types
+## Redis Protocol (Port 6379)
 
 ### Strings
-```sql
-SET @key = 'value';
-SET @key = 'value' EX 60;     -- TTL 60 seconds
-GET @key;
-DEL @key;
 ```
-
-### Numbers (Counters)
-```sql
-SET @counter = 0;
-INCR @counter;    -- Returns new value
-DECR @counter;    -- Returns new value
-INCRBY @counter 5;
-DECRBY @counter 3;
+SET key value
+GET key
+DEL key
+EXISTS key
+EXPIRE key seconds
+TTL key
+KEYS pattern
 ```
 
 ### Hashes
-```sql
-HSET @user:1 name 'Alice' email 'alice@example.com';
-HGET @user:1 name;
-HGETALL @user:1;
-HDEL @user:1 email;
-HKEYS @user:1;
-HVALS @user:1;
-HLEN @user:1;
+```
+HSET key field value
+HGET key field
+HGETALL key
+HDEL key field [field ...]
 ```
 
 ### Lists
-```sql
-LPUSH @queue 'task1';
-RPUSH @queue 'task2';
-LPOP @queue;
-RPOP @queue;
-LRANGE @queue 0 -1;
-LLEN @queue;
+```
+LPUSH key value [value ...]
+RPUSH key value [value ...]
+LRANGE key start stop
+LPOP key [count]
+RPOP key [count]
+LLEN key
 ```
 
 ### Sets
-```sql
-SADD @tags 'rust' 'database';
-SMEMBERS @tags;
-SISMEMBER @tags 'rust';
-SREM @tags 'database';
-SCARD @tags;
+```
+SADD key member [member ...]
+SMEMBERS key
+SISMEMBER key member
+SREM key member [member ...]
 ```
 
-## HTTP API
+### Sorted Sets
+```
+ZADD key score member [score member ...]
+ZRANGE key start stop [WITHSCORES]
+ZRANGEBYSCORE key min max [WITHSCORES]
+ZREM key member [member ...]
+```
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/kv` | List keys (query: `pattern=*`, `type=string`) |
-| GET | `/kv/<key>` | Get value |
-| PUT | `/kv/<key>` | Set value (body: `{"value": "...", "ttl": 60}`) |
-| DELETE | `/kv/<key>` | Delete key |
+### Streams
+```
+XADD key [ID] field value [field value ...]
+XRANGE key start stop [COUNT n]
+XLEN key
+```
 
-## Key Naming Convention
-- Strings: `strings:<name>`
-- Hashes: `hashes:<name>`
-- Lists: `lists:<name>`
-- Sets: `sets:<name>`
+### Pub/Sub
+```
+PUBLISH channel message
+SUBSCRIBE channel [channel ...]
+UNSUBSCRIBE [channel ...]
+PUBSUB CHANNELS
+```
 
-Example keys: `session:abc123`, `user:1:profile`, `cache:products`
+## JSqueal API
+
+Access via `POST /_jsqueal`:
+
+```json
+{
+  "squeal": {
+    "KvSet": {
+      "key": "mykey",
+      "value": {"Text": "hello"},
+      "expiry": 60
+    }
+  }
+}
+```
+
+```json
+{
+  "squeal": {
+    "KvGet": {
+      "key": "mykey"
+    }
+  }
+}
+```
 
 ## TTL
-- Use `EX` seconds or `PX` milliseconds
-- `SET key value EX 60`
-- `EXPIRE key 30`
-- `TTL key` - returns remaining seconds
-- `-1` = no expiry, `-2` = key doesn't exist
+- Use `EXPIRE key seconds` to set expiration
+- `TTL key` returns:
+  - `-1` = no expiry
+  - `-2` = key doesn't exist
+  - `> 0` = seconds remaining
 
-## Pub/Sub (Future)
-```sql
-PUBLISH channel message;
-SUBSCRIBE channel;
-```
+## Key Naming Convention
+Example keys: `session:abc123`, `user:1:profile`, `cache:products`

@@ -1,5 +1,18 @@
 # thy-squeal Changelog
 
+## [v0.6.1] - 2026-03-15
+### Added
+- **Redis Protocol Compatibility**: RESP protocol support on port 6379 with comprehensive command implementation.
+- **Core KV Commands**: GET, SET, DEL, EXISTS, EXPIRE, TTL, KEYS
+- **Hash Commands**: HSET, HGET, HDEL, HGETALL
+- **List Commands**: LPUSH, RPUSH, LRANGE, LPOP, RPOP, LLEN
+- **Set Commands**: SADD, SREM, SMEMBERS, SISMEMBER
+- **Sorted Set Commands**: ZADD, ZRANGE, ZRANGEBYSCORE, ZREM
+- **Stream Commands**: XADD, XRANGE, XLEN
+- **Pub/Sub Commands**: PUBLISH, SUBSCRIBE, UNSUBSCRIBE, PUBSUB
+- **JSqueal KV Support**: Full KV data structure operations via Squeal IR (KvSet, KvGet, KvHashSet, KvListPush, KvSetAdd, KvZSetAdd, KvStreamAdd, PubSubPublish)
+- **Enhanced Persistence**: Snapshot-based persistence including all KV data structures (hash, list, set, zset, stream) alongside WAL replay
+
 ## [v0.6.0] - 2026-03-12
 ### Added
 - **Squeal IR (Internal Representation)**: Introduced a unified, strongly-typed internal query representation. This layer decouples the surface syntax (SQL or JSON) from the execution engine, providing a more robust foundation for optimization and cross-protocol support.
