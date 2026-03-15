@@ -1,5 +1,5 @@
 use super::error::StorageError;
-use super::persistence::{Persister, WalRecord};
+use super::persistence::{Persister, SnapshotData, WalRecord};
 use super::row::{Column, ForeignKey, Row};
 use super::table::Table;
 use super::types::DataType;
@@ -91,20 +91,57 @@ impl Database {
         persister: Box<dyn Persister>,
         data_dir: String,
     ) -> Result<Self, StorageError> {
-        let tables = persister.load_tables().unwrap_or_default();
+        let snapshot = persister.load_snapshot().unwrap_or(None);
+
+        let (
+            tables,
+            kv,
+            kv_expiry,
+            kv_hash,
+            kv_list,
+            kv_set,
+            kv_zset,
+            kv_stream,
+            kv_stream_last_id,
+        ) = if let Some(s) = snapshot {
+            (
+                s.tables,
+                s.kv,
+                s.kv_expiry,
+                s.kv_hash,
+                s.kv_list,
+                s.kv_set,
+                s.kv_zset,
+                s.kv_stream,
+                s.kv_stream_last_id,
+            )
+        } else {
+            (
+                HashMap::new(),
+                HashMap::new(),
+                HashMap::new(),
+                HashMap::new(),
+                HashMap::new(),
+                HashMap::new(),
+                HashMap::new(),
+                HashMap::new(),
+                HashMap::new(),
+            )
+        };
+
         let mut db = Self {
             state: DatabaseState {
                 tables,
                 materialized_views: HashMap::new(),
                 users: HashMap::new(),
-                kv: HashMap::new(),
-                kv_expiry: HashMap::new(),
-                kv_hash: HashMap::new(),
-                kv_list: HashMap::new(),
-                kv_set: HashMap::new(),
-                kv_zset: HashMap::new(),
-                kv_stream: HashMap::new(),
-                kv_stream_last_id: HashMap::new(),
+                kv,
+                kv_expiry,
+                kv_hash,
+                kv_list,
+                kv_set,
+                kv_zset,
+                kv_stream,
+                kv_stream_last_id,
             },
             persister: Some(persister),
             _data_dir: Some(data_dir.clone()),
@@ -156,7 +193,18 @@ impl Database {
 
     pub fn save(&self) -> Result<(), StorageError> {
         if let Some(persister) = &self.persister {
-            persister.save_tables(&self.state.tables)
+            let snapshot = SnapshotData {
+                tables: self.state.tables.clone(),
+                kv: self.state.kv.clone(),
+                kv_expiry: self.state.kv_expiry.clone(),
+                kv_hash: self.state.kv_hash.clone(),
+                kv_list: self.state.kv_list.clone(),
+                kv_set: self.state.kv_set.clone(),
+                kv_zset: self.state.kv_zset.clone(),
+                kv_stream: self.state.kv_stream.clone(),
+                kv_stream_last_id: self.state.kv_stream_last_id.clone(),
+            };
+            persister.save_snapshot(&snapshot)
         } else {
             Ok(())
         }

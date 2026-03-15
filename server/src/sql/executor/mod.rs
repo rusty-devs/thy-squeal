@@ -948,23 +948,37 @@ impl Executor {
         })
     }
 
-    pub async fn kv_stream_add(&self, key: String, id: Option<u64>, fields: HashMap<String, Value>, tx_id: Option<&str>) -> SqlResult<String> {
-        let new_id = self.mutate_state(tx_id, |state| {
-            let stream = state.kv_stream.entry(key.clone()).or_insert_with(Vec::new);
-            let last_id = state.kv_stream_last_id.entry(key.clone()).or_insert(0);
-            
-            let new_id = id.unwrap_or(*last_id + 1);
-            *last_id = new_id;
-            
-            stream.push((new_id, fields));
-            Ok(new_id)
-        })
-        .await?;
+    pub async fn kv_stream_add(
+        &self,
+        key: String,
+        id: Option<u64>,
+        fields: HashMap<String, Value>,
+        tx_id: Option<&str>,
+    ) -> SqlResult<String> {
+        let new_id = self
+            .mutate_state(tx_id, |state| {
+                let stream = state.kv_stream.entry(key.clone()).or_insert_with(Vec::new);
+                let last_id = state.kv_stream_last_id.entry(key.clone()).or_insert(0);
+
+                let new_id = id.unwrap_or(*last_id + 1);
+                *last_id = new_id;
+
+                stream.push((new_id, fields));
+                Ok(new_id)
+            })
+            .await?;
 
         Ok(new_id.to_string())
     }
 
-    pub async fn kv_stream_range(&self, key: &str, start: &str, stop: &str, count: Option<usize>, tx_id: Option<&str>) -> SqlResult<Vec<(String, HashMap<String, Value>)>> {
+    pub async fn kv_stream_range(
+        &self,
+        key: &str,
+        start: &str,
+        stop: &str,
+        count: Option<usize>,
+        tx_id: Option<&str>,
+    ) -> SqlResult<Vec<(String, HashMap<String, Value>)>> {
         let parse_id = |s: &str| -> SqlResult<u64> {
             if s == "-" {
                 return Ok(0);
@@ -972,14 +986,17 @@ impl Executor {
             if s == "+" {
                 return Ok(u64::MAX);
             }
-            s.parse().map_err(|_| SqlError::Runtime("Invalid stream ID".to_string()))
+            s.parse()
+                .map_err(|_| SqlError::Runtime("Invalid stream ID".to_string()))
         };
 
         let start_id = parse_id(start)?;
         let stop_id = parse_id(stop)?;
 
         let stream = if let Some(id) = tx_id {
-            let state = self.transactions.get(id)
+            let state = self
+                .transactions
+                .get(id)
                 .ok_or_else(|| SqlError::Runtime("Transaction not found".to_string()))?;
             state.kv_stream.get(key).cloned().unwrap_or_default()
         } else {
@@ -996,7 +1013,7 @@ impl Executor {
             } else {
                 id >= start_id && id <= stop_id
             };
-            
+
             if include {
                 results.push((id.to_string(), fields));
             }
@@ -1011,7 +1028,9 @@ impl Executor {
 
     pub async fn kv_stream_len(&self, key: &str, tx_id: Option<&str>) -> SqlResult<usize> {
         let len = if let Some(id) = tx_id {
-            let state = self.transactions.get(id)
+            let state = self
+                .transactions
+                .get(id)
                 .ok_or_else(|| SqlError::Runtime("Transaction not found".to_string()))?;
             state.kv_stream.get(key).map(|s| s.len()).unwrap_or(0)
         } else {
@@ -1040,8 +1059,10 @@ impl Executor {
         kv: squeal::KvStreamRange,
         tx_id: Option<&str>,
     ) -> SqlResult<QueryResult> {
-        let results = self.kv_stream_range(&kv.key, &kv.start, &kv.stop, kv.count, tx_id).await?;
-        
+        let results = self
+            .kv_stream_range(&kv.key, &kv.start, &kv.stop, kv.count, tx_id)
+            .await?;
+
         let mut rows = vec![];
         for (id, fields) in results {
             let mut row = vec![Value::Text(id)];
