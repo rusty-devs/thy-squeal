@@ -180,7 +180,7 @@ thy-squeal/                          # Cargo workspace
 - [x] **Data Structures**: Lists, Sets, Hashes, Sorted Sets, **Streams (XADD, XREAD, etc.)**
 - [x] **Persistence**: RDB-style snapshots and AOF (Append Only File) integration with existing WAL
 - [x] **Pub/Sub**: Basic message queuing and notification system
-- [ ] **SQL Integration**: Querying Key-Value data via SQL virtual tables
+- [x] **SQL Integration**: Querying Key-Value data via SQL virtual tables
 
 ### Phase 7: Production & Distributed (v1.0) - 🏗 IN PROGRESS
 - [x] **JSqueal**: JSON-based query language (direct IR mapping, bypassing Pest parser)

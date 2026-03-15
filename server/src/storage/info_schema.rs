@@ -68,7 +68,6 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
             ],
         });
     }
-    // Add system views
     for sys_view in &[
         "tables",
         "columns",
@@ -76,6 +75,12 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
         "schemata",
         "statistics",
         "key_column_usage",
+        "kv_strings",
+        "kv_hash",
+        "kv_list",
+        "kv_set",
+        "kv_zset",
+        "kv_stream",
     ] {
         tables_table.data.rows.push(Row {
             id: sys_view.to_string(),
@@ -140,7 +145,7 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
     }
     tables.insert("columns".to_string(), columns_table);
 
-    // 4. information_schema.statistics (Index details)
+    // 4. information_schema.statistics
     let stats_cols = vec![
         Column {
             name: "table_schema".to_string(),
@@ -196,17 +201,13 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
                 crate::storage::TableIndex::BTree { .. } => "BTREE",
                 crate::storage::TableIndex::Hash { .. } => "HASH",
             };
-
             let cardinality = index.key_count();
             let total_rows = index.total_rows();
-
-            // Extract column names from index expressions if possible
             for (i, expr) in index.expressions().iter().enumerate() {
                 let col_name: String = match expr {
                     crate::squeal::Expression::Column(c) => c.clone(),
                     _ => format!("expr_{}", i),
                 };
-
                 stats_table.data.rows.push(Row {
                     id: format!("{}_{}_{}", t_name, idx_name, i),
                     values: vec![
@@ -271,7 +272,6 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
     ];
     let mut kcu_table = Table::new("key_column_usage".to_string(), kcu_cols, None, vec![]);
     for (t_name, table) in &db_state.tables {
-        // Primary Key
         if let Some(ref pk_cols) = table.schema.primary_key {
             for col_name in pk_cols {
                 let col_name: String = col_name.clone();
@@ -290,8 +290,6 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
                 });
             }
         }
-
-        // Foreign Keys
         for fk in &table.schema.foreign_keys {
             let constraint_name = format!("fk_{}_{}", t_name, fk.ref_table);
             for (i, col_name) in fk.columns.iter().enumerate() {
@@ -313,7 +311,7 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
     }
     tables.insert("key_column_usage".to_string(), kcu_table);
 
-    // 6. information_schema.indexes (compatibility with earlier versions)
+    // 6. information_schema.indexes
     let indexes_cols = vec![
         Column {
             name: "table_name".to_string(),
@@ -355,6 +353,211 @@ pub fn get_info_schema_tables(db_state: &DatabaseState) -> HashMap<String, Table
         }
     }
     tables.insert("indexes".to_string(), indexes_table);
+
+    // 7. information_schema.kv_strings
+    let kv_strings_cols = vec![
+        Column {
+            name: "key".to_string(),
+            data_type: DataType::Text,
+            is_auto_increment: false,
+        },
+        Column {
+            name: "value".to_string(),
+            data_type: DataType::Text,
+            is_auto_increment: false,
+        },
+        Column {
+            name: "expiry".to_string(),
+            data_type: DataType::Int,
+            is_auto_increment: false,
+        },
+    ];
+    let mut kv_strings_table = Table::new("kv_strings".to_string(), kv_strings_cols, None, vec![]);
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64;
+    for (key, value) in &db_state.kv {
+        let expiry = db_state.kv_expiry.get(key).map(|&e| e as i64).unwrap_or(-1);
+        let expiry_display = if expiry > 0 && (expiry as u64) < now {
+            -2
+        } else {
+            expiry
+        };
+        kv_strings_table.data.rows.push(Row {
+            id: key.clone(),
+            values: vec![
+                Value::Text(key.clone()),
+                Value::Text(format!("{:?}", value)),
+                Value::Int(expiry_display),
+            ],
+        });
+    }
+    tables.insert("kv_strings".to_string(), kv_strings_table);
+
+    // 8. information_schema.kv_hash
+    let kv_hash_cols = vec![
+        Column {
+            name: "key".to_string(),
+            data_type: DataType::Text,
+            is_auto_increment: false,
+        },
+        Column {
+            name: "field".to_string(),
+            data_type: DataType::Text,
+            is_auto_increment: false,
+        },
+        Column {
+            name: "value".to_string(),
+            data_type: DataType::Text,
+            is_auto_increment: false,
+        },
+    ];
+    let mut kv_hash_table = Table::new("kv_hash".to_string(), kv_hash_cols, None, vec![]);
+    for (key, hash) in &db_state.kv_hash {
+        for (field, value) in hash {
+            kv_hash_table.data.rows.push(Row {
+                id: format!("{}_{}", key, field),
+                values: vec![
+                    Value::Text(key.clone()),
+                    Value::Text(field.clone()),
+                    Value::Text(format!("{:?}", value)),
+                ],
+            });
+        }
+    }
+    tables.insert("kv_hash".to_string(), kv_hash_table);
+
+    // 9. information_schema.kv_list
+    let kv_list_cols = vec![
+        Column {
+            name: "key".to_string(),
+            data_type: DataType::Text,
+            is_auto_increment: false,
+        },
+        Column {
+            name: "index".to_string(),
+            data_type: DataType::Int,
+            is_auto_increment: false,
+        },
+        Column {
+            name: "value".to_string(),
+            data_type: DataType::Text,
+            is_auto_increment: false,
+        },
+    ];
+    let mut kv_list_table = Table::new("kv_list".to_string(), kv_list_cols, None, vec![]);
+    for (key, list) in &db_state.kv_list {
+        for (i, value) in list.iter().enumerate() {
+            kv_list_table.data.rows.push(Row {
+                id: format!("{}_{}", key, i),
+                values: vec![
+                    Value::Text(key.clone()),
+                    Value::Int(i as i64),
+                    Value::Text(format!("{:?}", value)),
+                ],
+            });
+        }
+    }
+    tables.insert("kv_list".to_string(), kv_list_table);
+
+    // 10. information_schema.kv_set
+    let kv_set_cols = vec![
+        Column {
+            name: "key".to_string(),
+            data_type: DataType::Text,
+            is_auto_increment: false,
+        },
+        Column {
+            name: "member".to_string(),
+            data_type: DataType::Text,
+            is_auto_increment: false,
+        },
+    ];
+    let mut kv_set_table = Table::new("kv_set".to_string(), kv_set_cols, None, vec![]);
+    for (key, set) in &db_state.kv_set {
+        for member in set {
+            kv_set_table.data.rows.push(Row {
+                id: format!("{}_{}", key, member),
+                values: vec![Value::Text(key.clone()), Value::Text(member.clone())],
+            });
+        }
+    }
+    tables.insert("kv_set".to_string(), kv_set_table);
+
+    // 11. information_schema.kv_zset
+    let kv_zset_cols = vec![
+        Column {
+            name: "key".to_string(),
+            data_type: DataType::Text,
+            is_auto_increment: false,
+        },
+        Column {
+            name: "score".to_string(),
+            data_type: DataType::Float,
+            is_auto_increment: false,
+        },
+        Column {
+            name: "member".to_string(),
+            data_type: DataType::Text,
+            is_auto_increment: false,
+        },
+    ];
+    let mut kv_zset_table = Table::new("kv_zset".to_string(), kv_zset_cols, None, vec![]);
+    for (key, zset) in &db_state.kv_zset {
+        for (score, member) in zset {
+            kv_zset_table.data.rows.push(Row {
+                id: format!("{}_{}", key, member),
+                values: vec![
+                    Value::Text(key.clone()),
+                    Value::Float(*score),
+                    Value::Text(member.clone()),
+                ],
+            });
+        }
+    }
+    tables.insert("kv_zset".to_string(), kv_zset_table);
+
+    // 12. information_schema.kv_stream
+    let kv_stream_cols = vec![
+        Column {
+            name: "key".to_string(),
+            data_type: DataType::Text,
+            is_auto_increment: false,
+        },
+        Column {
+            name: "id".to_string(),
+            data_type: DataType::Int,
+            is_auto_increment: false,
+        },
+        Column {
+            name: "field".to_string(),
+            data_type: DataType::Text,
+            is_auto_increment: false,
+        },
+        Column {
+            name: "value".to_string(),
+            data_type: DataType::Text,
+            is_auto_increment: false,
+        },
+    ];
+    let mut kv_stream_table = Table::new("kv_stream".to_string(), kv_stream_cols, None, vec![]);
+    for (key, stream) in &db_state.kv_stream {
+        for (id, fields) in stream {
+            for (field, value) in fields {
+                kv_stream_table.data.rows.push(Row {
+                    id: format!("{}_{}_{}", key, id, field),
+                    values: vec![
+                        Value::Text(key.clone()),
+                        Value::Int(*id as i64),
+                        Value::Text(field.clone()),
+                        Value::Text(format!("{:?}", value)),
+                    ],
+                });
+            }
+        }
+    }
+    tables.insert("kv_stream".to_string(), kv_stream_table);
 
     tables
 }
