@@ -59,6 +59,52 @@ impl Executor {
                     .await?
                 }
                 Squeal::Deallocate(name) => self.exec_deallocate(&name).await?,
+
+                // KV Store operations
+                Squeal::KvSet(kv) => {
+                    self.exec_kv_set(kv, ctx.session.transaction_id.as_deref())
+                        .await?
+                }
+                Squeal::KvGet(kv) => {
+                    self.exec_kv_get(kv, ctx.session.transaction_id.as_deref())
+                        .await?
+                }
+                Squeal::KvDel(kv) => {
+                    self.exec_kv_del(kv, ctx.session.transaction_id.as_deref())
+                        .await?
+                }
+                Squeal::KvHashSet(kv) => {
+                    self.exec_kv_hash_set(kv, ctx.session.transaction_id.as_deref())
+                        .await?
+                }
+                Squeal::KvHashGet(kv) => {
+                    self.exec_kv_hash_get(kv, ctx.session.transaction_id.as_deref())
+                        .await?
+                }
+                Squeal::KvListPush(kv) => {
+                    self.exec_kv_list_push(kv, ctx.session.transaction_id.as_deref())
+                        .await?
+                }
+                Squeal::KvListRange(kv) => {
+                    self.exec_kv_list_range(kv, ctx.session.transaction_id.as_deref())
+                        .await?
+                }
+                Squeal::KvSetAdd(kv) => {
+                    self.exec_kv_set_add(kv, ctx.session.transaction_id.as_deref())
+                        .await?
+                }
+                Squeal::KvSetMembers(kv) => {
+                    self.exec_kv_set_members(kv, ctx.session.transaction_id.as_deref())
+                        .await?
+                }
+                Squeal::KvZSetAdd(kv) => {
+                    self.exec_kv_zset_add(kv, ctx.session.transaction_id.as_deref())
+                        .await?
+                }
+                Squeal::KvZSetRange(kv) => {
+                    self.exec_kv_zset_range(kv, ctx.session.transaction_id.as_deref())
+                        .await?
+                }
             };
 
             if res.transaction_id.is_none() {

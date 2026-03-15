@@ -1,6 +1,6 @@
 use super::cond::Condition;
 use super::expr::Expression;
-use crate::storage::{Column, ForeignKey, Privilege};
+use crate::storage::{Column, ForeignKey, Privilege, Value};
 use serde::{Deserialize, Serialize};
 
 /// Squeal Internal Representation (IR) of a query.
@@ -28,6 +28,86 @@ pub enum Squeal {
     Begin,
     Commit,
     Rollback,
+    KvSet(KvSet),
+    KvGet(KvGet),
+    KvDel(KvDel),
+    KvHashSet(KvHashSet),
+    KvHashGet(KvHashGet),
+    KvListPush(KvListPush),
+    KvListRange(KvListRange),
+    KvSetAdd(KvSetAdd),
+    KvSetMembers(KvSetMembers),
+    KvZSetAdd(KvZSetAdd),
+    KvZSetRange(KvZSetRange),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct KvSet {
+    pub key: String,
+    pub value: Value,
+    pub expiry: Option<u64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct KvGet {
+    pub key: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct KvDel {
+    pub keys: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct KvHashSet {
+    pub key: String,
+    pub field: String,
+    pub value: Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct KvHashGet {
+    pub key: String,
+    pub field: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct KvListPush {
+    pub key: String,
+    pub values: Vec<Value>,
+    pub left: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct KvListRange {
+    pub key: String,
+    pub start: i64,
+    pub stop: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct KvSetAdd {
+    pub key: String,
+    pub members: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct KvSetMembers {
+    pub key: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct KvZSetAdd {
+    pub key: String,
+    pub members: Vec<(f64, String)>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct KvZSetRange {
+    pub key: String,
+    pub start: i64,
+    pub stop: i64,
+    pub with_scores: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
