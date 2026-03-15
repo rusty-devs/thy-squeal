@@ -8,7 +8,7 @@ use super::wal;
 use crate::sql::eval::Evaluator;
 use crate::squeal::{Expression, Select};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum Privilege {
@@ -40,7 +40,15 @@ pub struct DatabaseState {
     #[serde(default)]
     pub kv: HashMap<String, Value>,
     #[serde(default)]
-    pub kv_expiry: HashMap<String, u64>, // key -> expiry timestamp (milliseconds)
+    pub kv_expiry: HashMap<String, u64>,
+    #[serde(default)]
+    pub kv_hash: HashMap<String, HashMap<String, Value>>,
+    #[serde(default)]
+    pub kv_list: HashMap<String, Vec<Value>>,
+    #[serde(default)]
+    pub kv_set: HashMap<String, HashSet<String>>,
+    #[serde(default)]
+    pub kv_zset: HashMap<String, Vec<(f64, String)>>, // key -> [(score, member), ...] sorted by score
 }
 
 impl DatabaseState {
@@ -86,6 +94,10 @@ impl Database {
                 users: HashMap::new(),
                 kv: HashMap::new(),
                 kv_expiry: HashMap::new(),
+                kv_hash: HashMap::new(),
+                kv_list: HashMap::new(),
+                kv_set: HashMap::new(),
+                kv_zset: HashMap::new(),
             },
             persister: Some(persister),
             _data_dir: Some(data_dir.clone()),
